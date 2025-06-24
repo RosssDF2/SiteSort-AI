@@ -96,11 +96,11 @@ Backend Express API.
 1. Run frontend:
 ```bash
 cd client
-npm install
-npm run dev
+npm install #Once only!
+npm run dev #run client
 
 2. Run backend:
 cd server
-npm install
-node index.js
+npm install  #Once only!
+node index.js #run server
 
