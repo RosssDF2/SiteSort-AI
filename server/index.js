@@ -17,3 +17,6 @@ app.listen(port, () => {
   console.log(`Server started on http://localhost:${port}`);
 });
 
+const authRoutes = require("./routes/auth");
+app.use("/api/auth", authRoutes);
+
