@@ -4,27 +4,33 @@ import {
     Box, Paper, Button, Typography, TextField, IconButton
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import http from '../http'; // or wherever your axios setup is
+
 
 function SortaBot() {
     const [open, setOpen] = useState(false);
     const [chatInput, setChatInput] = useState('');
     const [chatLog, setChatLog] = useState([]);
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!chatInput.trim()) return;
 
         const userMessage = { from: 'user', text: chatInput };
-        const botReply = { from: 'sorta', text: generateSortaResponse(chatInput) };
-
-        setChatLog((prev) => [...prev, userMessage, botReply]);
+        setChatLog((prev) => [...prev, userMessage]);
         setChatInput('');
+
+        try {
+            const res = await http.post('/sorta/chat', { message: chatInput });
+            const botReply = { from: 'sorta', text: res.data.reply };
+            setChatLog((prev) => [...prev, botReply]);
+        } catch (err) {
+            console.error("Sorta API error:", err);
+            const botReply = { from: 'sorta', text: "Oops! I had trouble reaching my brain 🧠. Try again later." };
+            setChatLog((prev) => [...prev, botReply]);
+        }
     };
 
-    const generateSortaResponse = (text) => {
-        if (text.toLowerCase().includes("upload")) return "To upload files, go to the AI Upload section.";
-        if (text.toLowerCase().includes("password")) return "Click on 'Change your password' under Password Manager.";
-        return "I'm here to help! Ask me anything about using SiteSort AI.";
-    };
+
 
     return (
         <Box

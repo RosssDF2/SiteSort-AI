@@ -1,0 +1,49 @@
+Welcome to SiteSort AI!
+
+📤 Uploading Files  
+- Go to the Upload tab.  
+- Drag and drop PDFs, Word, or Excel documents.  
+- The system automatically categorizes them into folders like:  
+  • Finance  
+  • Technical Drawings  
+  • Project Schedule  
+  • Tender Docs  
+
+📁 Searching Documents  
+- Use the built-in search assistant to ask things like:  
+  • “Show me the latest technical submission”  
+  • “Find RI reply form from May”  
+- The AI retrieves documents and summaries based on your query.  
+
+📊 Dashboard Insights  
+- Access the Dashboard tab to see summaries and trends.  
+- You'll find:  
+  • Number of files per category  
+  • Financial summaries  
+  • Submission deadlines  
+  • Missing document alerts  
+
+🧭 Help Guide  
+- You can ask things like:  
+  • “How do I upload documents?”  
+  • “Where can I find the dashboard?”  
+  • “How do I search for a document?”  
+- I only respond based on the actual system features.  
+
+👥 Account Info  
+- Accounts are created by the admin.  
+- You can update your name or profile photo in the Profile tab.  
+
+🛠 Common Issues  
+Q: I uploaded a file but it's in the wrong folder.  
+A: You can manually re-tag or move it.  
+
+Q: Search assistant returned no result.  
+A: Try being more specific (e.g., "May RI submission").  
+
+Q: Can I delete files?  
+A: Not yet. You can re-upload corrected versions.  
+
+💡 Tips  
+- Be clear and specific when searching.  
+- You can always click the help bubble to open this chat again.
