@@ -3,6 +3,8 @@ import React from 'react';
 import { Box, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import { Dashboard, Person, Lock, CloudUpload, Info } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Typography } from '@mui/material';
+
 
 const navItems = [
   { label: 'Profile', icon: <Person />, path: '/profile' },
@@ -30,9 +32,18 @@ function Sidebar() {
         zIndex: 1000,
       }}
     >
-      <Box mb={4} textAlign="center" pt={4}>
-        <img src="/logo.png" alt="SiteSort AI" style={{ width: 140 }} />
+      <Box mb={4} pt={4} display="flex" alignItems="center" justifyContent="center" gap={1}>
+        <img
+          src="/logo.png"
+          alt="SiteSort AI"
+          style={{ width: 50, height: 50, objectFit: "contain" }}
+        />
+        <Typography variant="h6" fontWeight={700}>
+          Site<span style={{ color: "#10B981" }}>Sort</span> AI
+        </Typography>
       </Box>
+
+
       <List>
         {navItems.map((item) => (
           <ListItem

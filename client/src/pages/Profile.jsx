@@ -11,10 +11,26 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MainLayout from '../layouts/MainLayout';
 import { UserContext } from '../contexts/UserContext';
+import { Menu, MenuItem, Divider } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
 
 function Profile() {
   const { user } = React.useContext(UserContext);
   const username = user?.email?.split('@')[0] || 'John Doe';
+  const navigate = useNavigate();
+  const [anchorEl, setAnchorEl] = React.useState(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event) => setAnchorEl(event.currentTarget);
+  const handleClose = () => setAnchorEl(null);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
 
   return (
     <MainLayout>
@@ -23,7 +39,32 @@ function Profile() {
         <IconButton><HelpOutlineIcon /></IconButton>
         <IconButton><AppsIcon /></IconButton>
         <IconButton><SettingsIcon /></IconButton>
-        <IconButton><AccountCircleIcon /></IconButton>
+        <IconButton onClick={handleClick}>
+          <AccountCircleIcon />
+        </IconButton>
+        <Menu
+          anchorEl={anchorEl}
+          open={open}
+          onClose={handleClose}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <Box px={2} py={1}>
+            <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
+            <Typography variant="subtitle1">Hi, <span style={{ color: "#10B981" }}>{username}</span></Typography>
+          </Box>
+
+          <Divider />
+          <MenuItem disabled>➕ Add account</MenuItem>
+          <MenuItem disabled>➕ Add account</MenuItem>
+
+          <Box px={2} py={1}>
+            <Button variant="outlined" color="error" fullWidth onClick={handleLogout}>
+              Sign out
+            </Button>
+          </Box>
+        </Menu>
+
       </Box>
 
       {/* Welcome Message with Avatar */}
