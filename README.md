@@ -102,5 +102,6 @@ npm run dev #run client
 2. Run backend:
 cd server
 npm install  #Once only!
+npm install cors #Once only!
 node index.js #run server
 

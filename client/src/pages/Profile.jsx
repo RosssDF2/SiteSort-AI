@@ -13,7 +13,7 @@ import MainLayout from '../layouts/MainLayout';
 import { UserContext } from '../contexts/UserContext';
 import { Menu, MenuItem, Divider } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-
+import SortaBot from '../components/SortaBot';
 
 function Profile() {
   const { user } = React.useContext(UserContext);
@@ -123,8 +123,10 @@ function Profile() {
           </Paper>
         </Grid>
       </Grid>
-    </MainLayout>
+       <SortaBot />
+  </MainLayout>
   );
+
 }
 
 export default Profile;
