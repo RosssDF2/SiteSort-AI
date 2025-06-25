@@ -93,6 +93,16 @@ Backend Express API.
 
 ## ✅ Setup Instructions
 
+FIRST: 
+create .env file under server folder!
+then copy and paste this in the .env file: 
+APP_PORT=3001
+CLIENT_URL=http://localhost:5173
+JWT_SECRET=superSecretKeyRosnanda
+
+
+
+
 1. Run frontend:
 ```bash
 cd client
@@ -104,4 +114,6 @@ cd server
 npm install  #Once only!
 npm install cors #Once only!
 node index.js #run server
+
+
 
