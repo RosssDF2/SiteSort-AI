@@ -123,8 +123,8 @@ function Profile() {
           </Paper>
         </Grid>
       </Grid>
-       <SortaBot />
-  </MainLayout>
+      <SortaBot />
+    </MainLayout>
   );
 
 }
