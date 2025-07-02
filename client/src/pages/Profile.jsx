@@ -17,7 +17,7 @@ import SortaBot from '../components/SortaBot';
 
 function Profile() {
   const { user } = React.useContext(UserContext);
-  const username = user?.email?.split('@')[0] || 'John Doe';
+  const username = user?.username || user?.email?.split('@')[0] || 'John Doe';
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);

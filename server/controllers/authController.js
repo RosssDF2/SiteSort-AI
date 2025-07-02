@@ -57,11 +57,13 @@ exports.verify2FA = async (req, res) => {
   res.json({
     token,
     user: {
-      id: user._id,
+      id: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
+      username: user.username // ✅ Add this
     }
   });
+
 };
 
 exports.temp2FACodes = temp2FACodes;

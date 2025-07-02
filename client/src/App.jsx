@@ -4,6 +4,8 @@ import Login from "./pages/Login";
 import Verify2FA from "./components/Verify2FA";
 import Profile from './pages/Profile'; // or wherever it lives
 import Dashboard from "./pages/Dashboard";
+import AdminPanel from './pages/AdminPanel';
+
 function App() {
   return (
     <BrowserRouter>
@@ -13,6 +15,7 @@ function App() {
         <Route path="/verify" element={<Verify2FA />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/admin" element={<AdminPanel />} />
       </Routes>
     </BrowserRouter>
   );

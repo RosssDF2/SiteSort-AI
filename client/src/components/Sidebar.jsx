@@ -4,6 +4,10 @@ import { Box, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import { Dashboard, Person, Lock, CloudUpload, Info } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Typography } from '@mui/material';
+import { useContext } from 'react';
+import { UserContext } from '../contexts/UserContext';
+
+
 
 
 const navItems = [
@@ -17,6 +21,7 @@ const navItems = [
 function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useContext(UserContext);
 
   return (
     <Box
@@ -45,29 +50,78 @@ function Sidebar() {
 
 
       <List>
-        {navItems.map((item) => (
-          <ListItem
-            key={item.label}
-            button
-            onClick={() => navigate(item.path)}
-            sx={{
-              backgroundColor: location.pathname === item.path ? '#10B981' : 'transparent',
-              color: location.pathname === item.path ? 'white' : 'black',
-              borderRadius: 2,
-              mx: 2,
-              mb: 1,
-              '&:hover': {
-                backgroundColor: location.pathname === item.path ? '#10B981' : '#f0f0f0',
-              },
-            }}
-          >
-            <ListItemIcon sx={{ color: location.pathname === item.path ? 'white' : '#6b7280' }}>
-              {item.icon}
-            </ListItemIcon>
-            <ListItemText primary={item.label} />
-          </ListItem>
-        ))}
+        {/* Admin-only: show only Admin Panel */}
+        {user?.role === 'admin' && (
+          <>
+            <ListItem
+              button
+              onClick={() => navigate('/profile')}
+              sx={{
+                backgroundColor: location.pathname === '/profile' ? '#10B981' : 'transparent',
+                color: location.pathname === '/profile' ? 'white' : 'black',
+                borderRadius: 2,
+                mx: 2,
+                mb: 1,
+                '&:hover': {
+                  backgroundColor: location.pathname === '/profile' ? '#10B981' : '#f0f0f0',
+                },
+              }}
+            >
+              <ListItemIcon sx={{ color: location.pathname === '/profile' ? 'white' : '#6b7280' }}>
+                <Person />
+              </ListItemIcon>
+              <ListItemText primary="Profile" />
+            </ListItem>
+
+            <ListItem
+              button
+              onClick={() => navigate('/admin')}
+              sx={{
+                backgroundColor: location.pathname === '/admin' ? '#10B981' : 'transparent',
+                color: location.pathname === '/admin' ? 'white' : 'black',
+                borderRadius: 2,
+                mx: 2,
+                mb: 1,
+                '&:hover': {
+                  backgroundColor: location.pathname === '/admin' ? '#10B981' : '#f0f0f0',
+                },
+              }}
+            >
+              <ListItemIcon sx={{ color: location.pathname === '/admin' ? 'white' : '#6b7280' }}>
+                <Lock />
+              </ListItemIcon>
+              <ListItemText primary="Admin Panel" />
+            </ListItem>
+          </>
+        )}
+
+
+        {/* Manager-only: all other navItems */}
+        {user?.role === 'manager' &&
+          navItems.map((item) => (
+            <ListItem
+              key={item.label}
+              button
+              onClick={() => navigate(item.path)}
+              sx={{
+                backgroundColor: location.pathname === item.path ? '#10B981' : 'transparent',
+                color: location.pathname === item.path ? 'white' : 'black',
+                borderRadius: 2,
+                mx: 2,
+                mb: 1,
+                '&:hover': {
+                  backgroundColor: location.pathname === item.path ? '#10B981' : '#f0f0f0',
+                },
+              }}
+            >
+              <ListItemIcon sx={{ color: location.pathname === item.path ? 'white' : '#6b7280' }}>
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText primary={item.label} />
+            </ListItem>
+          ))}
       </List>
+
     </Box>
   );
 }
