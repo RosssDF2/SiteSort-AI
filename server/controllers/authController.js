@@ -1,55 +1,67 @@
 const jwt = require("jsonwebtoken");
-const users = require("../models/User");
+const bcrypt = require("bcrypt");
+const User = require("../models/User");
 
-let temp2FACodes = {}; // key = user.id, value = { code, expires }
+let temp2FACodes = {}; // key = user._id, value = { code, expires }
 
-exports.loginUser = (req, res) => {
+exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
 
-  const user = users.find((u) => u.email === email);
-  console.log("Input email:", email);
-  console.log("Found user:", user);
-  console.log("Input password:", password);
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ error: "Invalid email or password" });
+    }
 
-  if (!user || password !== "password123") {
-    return res.status(400).json({ error: "Invalid email or password" });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: "Invalid email or password" });
+    }
+
+    // ✅ Generate 2FA code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = Date.now() + 5 * 60 * 1000; // 5 mins
+
+    temp2FACodes[user._id] = { code, expires };
+
+    console.log(`Generated 2FA code for ${email}:`, code); // dev only
+
+    res.json({
+      message: "2FA code sent",
+      tempUserId: user._id,
+      code, // REMOVE in production!
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
   }
-
-  // ✅ Generate 2FA code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const expires = Date.now() + 5 * 60 * 1000; // 5 mins
-
-  temp2FACodes[user.id] = { code, expires };
-
-  console.log(`Generated 2FA code for ${email}:`, code); // dev only
-
-  // Return only temp user ID (simulate verification step)
-  res.json({
-    message: "2FA code sent",
-    tempUserId: user.id,
-    code, // REMOVE this line in prod
-  });
 };
 
-// Export 2FA storage for verification use
-exports.temp2FACodes = temp2FACodes;
-
-exports.verify2FA = (req, res) => {
+exports.verify2FA = async (req, res) => {
   const { userId, code } = req.body;
-  const user = users.find((u) => u.id === userId);
+  const user = await User.findById(userId);
   const twoFA = temp2FACodes[userId];
 
   if (!user || !twoFA || code !== twoFA.code || Date.now() > twoFA.expires) {
     return res.status(401).json({ error: "Invalid or expired 2FA code" });
   }
 
-  delete temp2FACodes[userId]; // clear once used
+  delete temp2FACodes[userId];
 
   const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user._id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: "1h" }
   );
 
-  res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
+  res.json({
+    token,
+    user: {
+      id: user._id,
+      email: user.email,
+      role: user.role
+    }
+  });
 };
+
+exports.temp2FACodes = temp2FACodes;
