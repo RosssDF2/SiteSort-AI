@@ -152,12 +152,16 @@ const Dashboard = () => {
     };
 
     const handleDialogClose = (result) => {
-        setDialogOpen(false);
-        if (dialogCallback) {
-            dialogCallback(result ? dialogInput : null);
-        }
-    };
+  setDialogOpen(false);
 
+  if (dialogCallback) {
+    if (isPrompt) {
+      dialogCallback(result ? dialogInput : null); // for Edit
+    } else {
+      dialogCallback(result); // for Confirm Delete
+    }
+  }
+};
     const handleApply = async () => {
         setLoading(true);
         try {
@@ -545,12 +549,28 @@ const Dashboard = () => {
                         />
                     )}
                 </DialogContent>
-                <DialogActions>
-                    {isPrompt && (
-                        <Button onClick={() => handleDialogClose(false)}>Cancel</Button>
-                    )}
-                    <Button onClick={() => handleDialogClose(true)}>{isPrompt ? 'OK' : 'Close'}</Button>
-                </DialogActions>
+               <DialogActions>
+  {dialogCallback ? (
+    // If there's a callback (confirm or prompt), show Cancel + Confirm button
+    <>
+      <Button onClick={() => handleDialogClose(false)}>
+        Cancel
+      </Button>
+      <Button
+        onClick={() => handleDialogClose(true)}
+        color="error"
+      >
+        {isPrompt ? 'OK' : 'Delete'}
+      </Button>
+    </>
+  ) : (
+    // If no callback (simple alert), show single Close button
+    <Button onClick={() => handleDialogClose(true)}>
+      Close
+    </Button>
+  )}
+</DialogActions>
+
             </Dialog>
         </MainLayout>
     );

@@ -14,7 +14,7 @@ router.post("/chat", async (req, res) => {
   try {
     const response = await axios.post("https://openrouter.ai/api/v1/chat/completions", {
       model: "mistralai/mistral-small-3.2-24b-instruct",
- // ✅ Correct model ID
+
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage }
@@ -23,7 +23,7 @@ router.post("/chat", async (req, res) => {
       headers: {
         "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:5173",  // ✅ required by OpenRouter
+        "HTTP-Referer": "http://localhost:5173",  
         "X-Title": "SiteSort AI"
       }
     });

@@ -43,3 +43,28 @@ mongoose.connect(process.env.MONGO_URI, {
 
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
+
+const { google } = require('googleapis');
+const path = require('path');
+
+// Step 1: Auth setup
+const auth = new google.auth.GoogleAuth({
+  keyFile: path.join(__dirname, 'dark-stratum-465506-u8-6a66584f85aa.json'), // replace with your file name
+  scopes: ['https://www.googleapis.com/auth/drive'],
+});
+
+async function listDriveFiles() {
+  const authClient = await auth.getClient();
+  const drive = google.drive({ version: 'v3', auth: authClient });
+
+  const folderId = '1C4linCEdD24PPVWPmtFhrRXC4C9GhuPR'; // Replace with your folder ID
+
+  const res = await drive.files.list({
+    q: `'${folderId}' in parents`,
+    fields: 'files(id, name)',
+  });
+
+  console.log('Files:', res.data.files);
+}
+
+listDriveFiles().catch(console.error);
