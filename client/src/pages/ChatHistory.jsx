@@ -1,19 +1,16 @@
 import React from 'react';
 import TopNav from '../components/TopNav';
-import Sidebar from '../components/Sidebar';
-import ChatBox from '../components/Chatbox';
+//import Sidebar from '../components/Sidebar';
+import ChatHistoryContent from '../components/ChatHistoryContent';
 import { Box } from '@mui/material';
 
-export default function Assistant() {
+export default function ChatHistory() {
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Top Navigation Bar */}
       <TopNav />
-
-      {/* Main content: Sidebar + Chat */}
       <Box sx={{ flex: 1, display: 'flex' }}>
-        <Sidebar />
-        <ChatBox />
+        
+        <ChatHistoryContent />
       </Box>
     </Box>
   );
