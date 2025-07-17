@@ -5,6 +5,7 @@ import Verify2FA from "./components/Verify2FA";
 import Profile from './pages/Profile'; // or wherever it lives
 import Dashboard from "./pages/Dashboard";
 import AdminPanel from './pages/AdminPanel';
+import Upload from './pages/Upload'; 
 
 function App() {
   return (
@@ -16,6 +17,8 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/upload" element={<Upload />} />
+
       </Routes>
     </BrowserRouter>
   );
