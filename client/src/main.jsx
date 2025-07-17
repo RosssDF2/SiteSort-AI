@@ -4,16 +4,13 @@ import App from './App';
 import { UserProvider } from './contexts/UserContext';
 import { CssBaseline } from "@mui/material";
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <UserProvider>
-    <App />
-  </UserProvider>
-);
+const root = ReactDOM.createRoot(document.getElementById('root'));
 
-ReactDOM.render(
-  <>
+root.render(
+  <React.StrictMode>
     <CssBaseline />
-    <App />
-  </>,
-  document.getElementById("root")
+    <UserProvider>
+      <App />
+    </UserProvider>
+  </React.StrictMode>
 );

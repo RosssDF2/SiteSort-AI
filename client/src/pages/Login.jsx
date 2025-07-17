@@ -102,13 +102,28 @@ export default function Login() {
           Sign in to <span style={{ color: "#10B981" }}>SiteSort</span>
         </Typography>
 
-        <Box display="flex" gap={2} mb={1}>
-          {[<FacebookIcon />, <AppleIcon />, <GoogleIcon />].map((icon, i) => (
-            <IconButton key={i} sx={{ border: "1px solid #ccc", color: "#555" }}>
-              {icon}
-            </IconButton>
-          ))}
+        <Box mb={2} width="100%" maxWidth={360}>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<GoogleIcon />}
+            sx={{
+              textTransform: "none",
+              borderColor: "#ccc",
+              color: "#555",
+              backgroundColor: "#fff",
+              borderRadius: 2,
+              py: 1.2,
+              "&:hover": {
+                backgroundColor: "#f5f5f5",
+                borderColor: "#aaa",
+              },
+            }}
+          >
+            Sign in with Google
+          </Button>
         </Box>
+
         <Typography variant="body2" color="text.secondary" mb={2}>
           or use your email account
         </Typography>

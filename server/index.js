@@ -2,22 +2,41 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const session = require("express-session");
+const passport = require("passport");
+const path = require("path");
+const { google } = require("googleapis");
+
 const app = express();
+const port = process.env.APP_PORT || 3001;
 
 // ✅ Middleware
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(express.static("public")); // For file uploads
+app.use(express.static("public"));
+
+// ✅ Session & Passport
+app.use(session({
+  secret: process.env.SESSION_SECRET || "super-secret",
+  resave: false,
+  saveUninitialized: false,
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+require("./config/passport"); // Google bind strategy
 
 // ✅ Routes
 const sortaRoute = require("./routes/sorta");
 const authRoutes = require("./routes/auth");
+const adminRoutes = require("./routes/admin");
+
 app.use("/api/sorta", sortaRoute);
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRoutes); 
+app.use("/api/admin", adminRoutes);
 
 // ✅ Test Route
 app.get("/", (req, res) => {
@@ -25,8 +44,6 @@ app.get("/", (req, res) => {
 });
 
 // ✅ Connect to MongoDB THEN start server
-const port = process.env.APP_PORT || 3001;
-
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -41,15 +58,9 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error("❌ MongoDB connection error:", err);
 });
 
-const adminRoutes = require('./routes/admin');
-app.use('/api/admin', adminRoutes);
-
-const { google } = require('googleapis');
-const path = require('path');
-
-// Step 1: Auth setup
+// ✅ Google Drive integration (optional feature, kept at bottom)
 const auth = new google.auth.GoogleAuth({
-  keyFile: path.join(__dirname, 'dark-stratum-465506-u8-6a66584f85aa.json'), // replace with your file name
+  keyFile: path.join(__dirname, 'dark-stratum-465506-u8-6a66584f85aa.json'),
   scopes: ['https://www.googleapis.com/auth/drive'],
 });
 

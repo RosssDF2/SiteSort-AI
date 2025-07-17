@@ -15,7 +15,30 @@ const userSchema = new mongoose.Schema({
     enum: ['manager', 'admin', 'user'],
     default: 'user'
   },
-  username: { type: String, required: true } // ✅ Add this line
+  username: { 
+    type: String, 
+    required: true 
+  },
+
+  // 🔐 Google binding fields
+  googleId: {
+    type: String,
+    default: null
+  },
+  isGoogleLinked: {
+    type: Boolean,
+    default: false
+  },
+
+  // 🔒 2FA fields (for later setup)
+  is2FAEnabled: {
+    type: Boolean,
+    default: false
+  },
+  twoFASecret: {
+    type: String,
+    default: null // Store TOTP secret here if using Google Authenticator
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
