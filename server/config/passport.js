@@ -25,3 +25,17 @@ passport.use("google-bind", new GoogleStrategy({
   }
 }));
 
+passport.use("google-login", new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: "/api/auth/google/login/callback"
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    const existingUser = await User.findOne({ googleId: profile.id });
+    if (!existingUser) return done(null, false); // Not bound
+
+    return done(null, existingUser);
+  } catch (err) {
+    return done(err, false);
+  }
+}));

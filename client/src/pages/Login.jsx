@@ -18,6 +18,7 @@ import * as yup from "yup";
 import http from "../http";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../contexts/UserContext";
+import { useLocation } from "react-router-dom";
 
 export default function Login() {
   const { setUser } = React.useContext(UserContext);
@@ -57,6 +58,15 @@ export default function Login() {
     },
   });
 
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const urlError = queryParams.get("error");
+
+  React.useEffect(() => {
+    if (urlError === "notbound") {
+      setErrorMsg("⚠️ This Google account is not yet bound to any SiteSort account.");
+    }
+  }, [urlError]);
   return (
     <Box
       component="section"
@@ -119,9 +129,13 @@ export default function Login() {
                 borderColor: "#aaa",
               },
             }}
+            onClick={() => {
+              window.location.href = "http://localhost:3001/api/auth/google/login";
+            }}
           >
             Sign in with Google
           </Button>
+
         </Box>
 
         <Typography variant="body2" color="text.secondary" mb={2}>

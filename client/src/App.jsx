@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import AdminPanel from './pages/AdminPanel';
 import BindGoogle from './pages/BindGoogle';
 import BindSuccess from "./pages/BindSuccess";
+import GoogleLoginSuccess from "./pages/GoogleLoginSuccess";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/auth/google/callback" element={<BindGoogle />} />
         <Route path="/bind/success" element={<BindSuccess />} />
+        <Route path="/google-login-success" element={<GoogleLoginSuccess />} />
       </Routes>
     </BrowserRouter>
   );

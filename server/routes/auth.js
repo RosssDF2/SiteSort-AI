@@ -125,4 +125,28 @@ router.post("/google/unbind", async (req, res) => {
   }
 });
 
+// 🌐 GOOGLE LOGIN FLOW
+// Step 1: Initiate Google Login
+router.get("/google/login", passport.authenticate("google-login", { scope: ["profile", "email"] }));
+
+// Step 2: Google Login Callback
+router.get("/google/login/callback",
+  passport.authenticate("google-login", {
+    failureRedirect: `${process.env.CLIENT_URL}/login?error=notbound`,  // 🔁 frontend URL
+    session: false,
+  }),
+  (req, res) => {
+    if (!req.user) {
+      return res.redirect(`${process.env.CLIENT_URL}/login?error=notbound`);
+    }
+
+    const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d"
+    });
+
+    // Redirect with token back to frontend
+    res.redirect(`${process.env.CLIENT_URL}/google-login-success?token=${token}`);
+  }
+);
+
 module.exports = router;
