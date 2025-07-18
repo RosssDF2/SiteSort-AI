@@ -39,9 +39,15 @@ export default function Login() {
           const { tempUserId, token, user } = res.data;
           if (tempUserId) {
             // 2FA required -> pass email/password so we can resend later
+            console.log("Navigating to /verify with email:", res.data.sendTo);
             navigate("/verify", {
-              state: { tempUserId, email, password }
+              state: {
+                tempUserId: res.data.tempUserId,
+                email: res.data.sendTo,        // <-- this is the Gmail to display
+                password,
+              }
             });
+
           } else {
             // full login
             localStorage.setItem("token", token);

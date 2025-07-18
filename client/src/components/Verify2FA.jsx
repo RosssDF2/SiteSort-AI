@@ -23,6 +23,8 @@ export default function Verify2FA() {
 
   // pulled from state
   const { tempUserId, email, password } = location.state || {};
+  console.log("🔍 Verify2FA received email:", email);
+
 
   // slide control
   const [inProp, setInProp] = React.useState(true);
@@ -65,6 +67,8 @@ export default function Verify2FA() {
       .then((res) => {
         // update tempUserId for the new code
         location.state.tempUserId = res.data.tempUserId;
+        location.state.email = res.data.sendTo; // <-- update masked email too
+
         alert("A new code has been sent to your email.");
       })
       .catch((err) => {
@@ -76,6 +80,17 @@ export default function Verify2FA() {
   const handleBack = () => {
     setInProp(false);
   };
+
+  const [maskedEmail, setMaskedEmail] = React.useState("");
+
+  React.useEffect(() => {
+    if (email) {
+      const masked = email.replace(/(.{2})(.*)(@.*)/, (_, a, b, c) =>
+        a + "*".repeat(Math.min(6, b.length)) + c
+      );
+      setMaskedEmail(masked);
+    }
+  }, [email]);
 
   return (
     <Slide
@@ -152,10 +167,9 @@ export default function Verify2FA() {
           <Typography mb={3} color="text.secondary" textAlign="center">
             please check your email for a 6-digit code:
             <br />
-            <strong>
-              {email.replace(/(.{2})(.*)(@.*)/, (_, a, b, c) => a + "*".repeat(b.length) + c)}
-            </strong>
+            <strong>{maskedEmail}</strong>
           </Typography>
+
 
           <Box
             component="form"

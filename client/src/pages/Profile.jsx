@@ -36,22 +36,22 @@ function Profile() {
   };
 
   React.useEffect(() => {
-  const fetchGoogleLinkStatus = async () => {
-    const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:3001/api/auth/check-google-link", {
-      headers: {
-        Authorization: `Bearer ${token}`
+    const fetchGoogleLinkStatus = async () => {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:3001/api/auth/check-google-link", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setIsGoogleLinked(data.isGoogleLinked);
       }
-    });
+    };
 
-    if (res.ok) {
-      const data = await res.json();
-      setIsGoogleLinked(data.isGoogleLinked);
-    }
-  };
-
-  fetchGoogleLinkStatus();
-}, []);
+    fetchGoogleLinkStatus();
+  }, []);
 
 
   return (
@@ -102,7 +102,7 @@ function Profile() {
 
       {/* Centered Cards */}
       <Grid container spacing={3} justifyContent="center">
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 3 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <LockIcon color="success" />
@@ -115,7 +115,7 @@ function Profile() {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 3 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <InfoIcon color="primary" />
@@ -128,16 +128,18 @@ function Profile() {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12}>
           <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 3 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <SettingsIcon color="success" />
               <Typography variant="h6">Account Settings</Typography>
             </Box>
             <Typography mb={2}>
-              Manage 2FA, login alerts, and keep your account extra secure.
-              You have 2 undone tasks:
+              {isGoogleLinked
+                ? "Your account is protected with Google login and 2FA. You can unlink your account below."
+                : "Keep your account secure by enabling Google login and 2FA. It only takes a few seconds."}
             </Typography>
+
             <Box display="flex" justifyContent="space-between" alignItems="center" gap={2}>
               {!isGoogleLinked ? (
                 <Button
@@ -197,10 +199,11 @@ function Profile() {
                 />
                 <Chip
                   icon={<SecurityIcon />}
-                  label={user?.is2FAEnabled ? "2FA enabled" : "2FA not enabled"}
-                  color={user?.is2FAEnabled ? "success" : "warning"}
-                  variant={user?.is2FAEnabled ? "filled" : "outlined"}
+                  label={isGoogleLinked && user?.role === "manager" ? "2FA enabled" : "2FA not enabled"}
+                  color={isGoogleLinked && user?.role === "manager" ? "success" : "warning"}
+                  variant={isGoogleLinked && user?.role === "manager" ? "filled" : "outlined"}
                 />
+
               </Box>
             </Box>
 

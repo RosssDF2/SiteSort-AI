@@ -15,9 +15,9 @@ const userSchema = new mongoose.Schema({
     enum: ['manager', 'admin', 'user'],
     default: 'user'
   },
-  username: { 
-    type: String, 
-    required: true 
+  username: {
+    type: String,
+    required: true
   },
 
   // 🔐 Google binding fields
@@ -29,6 +29,11 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  googleEmail: {
+    type: String,
+    default: null,
+  },
+
 
   // 🔒 2FA fields (for later setup)
   is2FAEnabled: {
