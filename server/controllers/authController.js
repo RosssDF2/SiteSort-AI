@@ -92,4 +92,70 @@ exports.verify2FA = async (req, res) => {
 
 };
 
+const generateResetToken = require('../utils/generateToken');
+const { sendResetEmail } = require('../utils/mailer'); // 👈 make sure this is imported
+
+exports.requestPasswordReset = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // 1. Generate token and expiry
+    const token = generateResetToken();
+    const expiry = Date.now() + 1000 * 60 * 30; // 30 minutes
+
+    user.resetToken = token;
+    user.resetTokenExpiry = expiry;
+    await user.save();
+
+    // 2. Build reset URL
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+
+    // 3. Determine recipients
+    const recipients = [user.email];
+    if (user.isGoogleLinked && user.googleEmail && user.googleEmail !== user.email) {
+      recipients.push(user.googleEmail);
+    }
+
+    // 4. Send email to each recipient
+    for (const email of recipients) {
+      console.log(`📧 Sending reset link to: ${email}`);
+      await sendResetEmail(email, resetUrl); // 🔁 uses mailer util
+    }
+
+    res.json({ message: "Password reset link sent" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+exports.resetPasswordWithToken = async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  try {
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpiry: { $gt: Date.now() }
+    });
+
+    if (!user) return res.status(400).json({ error: "Invalid or expired token" });
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashed;
+    user.resetToken = null;
+    user.resetTokenExpiry = null;
+    await user.save();
+
+    res.json({ message: "Password reset successful" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 exports.temp2FACodes = temp2FACodes;

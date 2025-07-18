@@ -8,6 +8,8 @@ import AdminPanel from './pages/AdminPanel';
 import BindGoogle from './pages/BindGoogle';
 import BindSuccess from "./pages/BindSuccess";
 import GoogleLoginSuccess from "./pages/GoogleLoginSuccess";
+import RequestReset from './pages/RequestReset';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
         <Route path="/auth/google/callback" element={<BindGoogle />} />
         <Route path="/bind/success" element={<BindSuccess />} />
         <Route path="/google-login-success" element={<GoogleLoginSuccess />} />
+        <Route path="/forgot" element={<RequestReset />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </BrowserRouter>
   );

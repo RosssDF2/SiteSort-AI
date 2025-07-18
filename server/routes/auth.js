@@ -150,4 +150,9 @@ router.get("/google/login/callback",
   }
 );
 
+const { requestPasswordReset, resetPasswordWithToken } = require("../controllers/authController");
+
+router.post("/request-reset", requestPasswordReset);
+router.post("/reset-password", resetPasswordWithToken);
+
 module.exports = router;
