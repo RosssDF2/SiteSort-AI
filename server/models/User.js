@@ -43,6 +43,11 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  
+  avatar: {
+    type: String,
+    default: null
+  },
 
 
   // 🔒 2FA fields (for later setup)

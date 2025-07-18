@@ -35,7 +35,7 @@ const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/admin");
 
 app.use("/api/sorta", sortaRoute);
-app.use("/api/auth", authRoutes); 
+app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 
 // ✅ Test Route
@@ -48,15 +48,15 @@ mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(() => {
-  console.log("✅ MongoDB connected");
-  app.listen(port, () => {
-    console.log(`🚀 Server started on http://localhost:${port}`);
+  .then(() => {
+    console.log("✅ MongoDB connected");
+    app.listen(port, () => {
+      console.log(`🚀 Server started on http://localhost:${port}`);
+    });
+  })
+  .catch(err => {
+    console.error("❌ MongoDB connection error:", err);
   });
-})
-.catch(err => {
-  console.error("❌ MongoDB connection error:", err);
-});
 
 // ✅ Google Drive integration (optional feature, kept at bottom)
 const auth = new google.auth.GoogleAuth({
@@ -77,5 +77,8 @@ async function listDriveFiles() {
 
   console.log('Files:', res.data.files);
 }
+
+app.use("/avatars", express.static("public/avatars"));
+
 
 listDriveFiles().catch(console.error);

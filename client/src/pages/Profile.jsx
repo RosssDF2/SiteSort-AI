@@ -1,5 +1,5 @@
 // src/pages/Profile.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Typography, Grid, Paper, Button, Chip, Avatar, IconButton } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import InfoIcon from '@mui/icons-material/Info';
@@ -25,6 +25,8 @@ function Profile() {
   const [isGoogleLinked, setIsGoogleLinked] = React.useState(user?.isGoogleLinked || false);
   const [googleBindError, setGoogleBindError] = React.useState("");
   const errorHandled = React.useRef(false);
+  const [resetMessage, setResetMessage] = useState("");
+
 
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
@@ -88,9 +90,17 @@ function Profile() {
           anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
           transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         >
-          <Box px={2} py={1}>
-            <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
-            <Typography variant="subtitle1">Hi, <span style={{ color: "#10B981" }}>{username}</span></Typography>
+          <Box px={2} py={2} display="flex" alignItems="center" gap={2}>
+            <Avatar
+              src={user?.avatar ? `http://localhost:3001${user.avatar}` : undefined}
+              sx={{ width: 48, height: 48 }}
+            />
+            <Box>
+              <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
+              <Typography variant="subtitle1">
+                Hi, <span style={{ color: "#10B981" }}>{username}</span>
+              </Typography>
+            </Box>
           </Box>
 
           <Divider />
@@ -98,17 +108,27 @@ function Profile() {
           <MenuItem disabled>➕ Add account</MenuItem>
 
           <Box px={2} py={1}>
-            <Button variant="outlined" color="error" fullWidth onClick={handleLogout}>
+            <Button
+              variant="outlined"
+              color="error"
+              fullWidth
+              onClick={handleLogout}
+            >
               Sign out
             </Button>
           </Box>
         </Menu>
 
+
       </Box>
 
       {/* Welcome Message with Avatar */}
       <Box textAlign="center" mb={4}>
-        <Avatar sx={{ width: 80, height: 80, mx: 'auto', mb: 2 }} />
+        <Avatar
+          src={user?.avatar ? `http://localhost:3001${user.avatar}` : undefined}
+          sx={{ width: 80, height: 80, mx: 'auto', mb: 2 }}
+        />
+
         <Typography variant="h4" mb={1}>
           Welcome, <span style={{ color: '#10B981' }}>{username}</span>
         </Typography>
@@ -128,7 +148,44 @@ function Profile() {
             <Typography mb={2}>
               See, change, or remove passwords you saved in your SiteSort Account.
             </Typography>
-            <Button variant="text">Change your password</Button>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Button
+                variant="text"
+                onClick={async () => {
+                  try {
+                    const res = await fetch("http://localhost:3001/api/auth/request-reset", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json"
+                      },
+                      body: JSON.stringify({ email: user.email })
+                    });
+
+                    if (res.ok) {
+                      setResetMessage("📩 Password reset link sent to your email.");
+                    } else {
+                      const data = await res.json();
+                      setResetMessage("❌ " + (data.error || "Failed to send reset link."));
+                    }
+                  } catch (err) {
+                    setResetMessage("❌ Error sending request.");
+                  }
+                }}
+              >
+                Change your password
+              </Button>
+
+              {resetMessage && (
+                <Typography
+                  ml={2}
+                  fontSize={14}
+                  color={resetMessage.startsWith("📩") ? "success.main" : "error"}
+                >
+                  {resetMessage}
+                </Typography>
+              )}
+            </Box>
+
           </Paper>
         </Grid>
 
@@ -141,7 +198,10 @@ function Profile() {
             <Typography mb={2}>
               Update your name and role so we can personalize your experience.
             </Typography>
-            <Button variant="text">Review personal information</Button>
+            <Button variant="text" onClick={() => navigate("/personalize")}>
+              Review personal information
+            </Button>
+
           </Paper>
         </Grid>
 
@@ -149,7 +209,7 @@ function Profile() {
           <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 3 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <SettingsIcon color="success" />
-              <Typography variant="h6">Account Settings</Typography>
+              <Typography variant="h6">Security Settings</Typography>
             </Box>
             <Typography mb={2}>
               {isGoogleLinked

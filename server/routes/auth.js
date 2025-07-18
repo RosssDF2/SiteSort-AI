@@ -6,6 +6,9 @@ const User = require("../models/User");
 require("../config/passport");
 
 const { loginUser, verify2FA } = require("../controllers/authController");
+const upload = require("../middlewares/uploadMiddleware");
+const { personalizeUser } = require("../controllers/authController");
+const authMiddleware = require("../middlewares/authMiddleware");
 
 // ✅ Login & 2FA
 router.post("/login", loginUser);
@@ -125,6 +128,13 @@ router.post("/google/unbind", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+router.post(
+  "/personalize",
+  authMiddleware,
+  upload.single("avatar"),
+  personalizeUser
+);
 
 // 🌐 GOOGLE LOGIN FLOW
 // Step 1: Initiate Google Login

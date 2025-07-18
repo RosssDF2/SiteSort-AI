@@ -51,6 +51,7 @@ exports.loginUser = async (req, res) => {
         email: user.email,
         role: user.role,
         username: user.username,
+        avatar: user.avatar, // ✅ add this line
         is2FAEnabled: user.is2FAEnabled,
         isGoogleLinked: user.isGoogleLinked,
       }
@@ -154,6 +155,33 @@ exports.resetPasswordWithToken = async (req, res) => {
     res.json({ message: "Password reset successful" });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+exports.personalizeUser = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (req.body.username) user.username = req.body.username;
+    if (req.file) {
+      user.avatar = `/avatars/${req.file.filename}`; // served from public folder
+    }
+
+    await user.save();
+
+    res.json({
+      id: user._id,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      avatar: user.avatar,
+      is2FAEnabled: user.is2FAEnabled,
+      isGoogleLinked: user.isGoogleLinked
+    });
+  } catch (err) {
+    console.error("❌ Personalize error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

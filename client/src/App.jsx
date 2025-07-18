@@ -10,6 +10,7 @@ import BindSuccess from "./pages/BindSuccess";
 import GoogleLoginSuccess from "./pages/GoogleLoginSuccess";
 import RequestReset from './pages/RequestReset';
 import ResetPassword from './pages/ResetPassword';
+import Personalize from './pages/Personalize';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/google-login-success" element={<GoogleLoginSuccess />} />
         <Route path="/forgot" element={<RequestReset />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/personalize" element={<Personalize />} />
       </Routes>
     </BrowserRouter>
   );
