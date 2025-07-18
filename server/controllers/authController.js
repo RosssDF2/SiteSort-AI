@@ -165,6 +165,10 @@ exports.personalizeUser = async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     if (req.body.username) user.username = req.body.username;
+    if (req.body.gender) user.gender = req.body.gender;
+    if (req.body.phone) user.phone = req.body.phone;
+    if (req.body.gmailEmail) user.gmailEmail = req.body.gmailEmail;
+    if (req.body.accountEmail) user.accountEmail = req.body.accountEmail;
     if (req.file) {
       user.avatar = `/avatars/${req.file.filename}`; // served from public folder
     }
@@ -177,9 +181,14 @@ exports.personalizeUser = async (req, res) => {
       username: user.username,
       role: user.role,
       avatar: user.avatar,
+      gender: user.gender,
+      phone: user.phone,
+      gmailEmail: user.gmailEmail,
+      accountEmail: user.accountEmail,
       is2FAEnabled: user.is2FAEnabled,
       isGoogleLinked: user.isGoogleLinked
     });
+
   } catch (err) {
     console.error("❌ Personalize error:", err);
     res.status(500).json({ error: "Server error" });

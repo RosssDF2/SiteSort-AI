@@ -43,12 +43,29 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  
+
   avatar: {
     type: String,
     default: null
   },
 
+  phone: {
+    type: String,
+    default: ""
+  },
+  gmailEmail: {
+    type: String,
+    default: ""
+  },
+  accountEmail: {
+    type: String,
+    default: ""
+  },
+  gender: {
+    type: String,
+    enum: ["Male", "Female", "Other", ""],
+    default: ""
+  },
 
   // 🔒 2FA fields (for later setup)
   is2FAEnabled: {
