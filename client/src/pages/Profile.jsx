@@ -15,13 +15,16 @@ import { Menu, MenuItem, Divider } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import SortaBot from '../components/SortaBot';
 import GoogleIcon from '@mui/icons-material/Google';
-
+import { useLocation } from 'react-router-dom'; // already imported
 
 function Profile() {
+
   const { user } = React.useContext(UserContext);
   const username = user?.username || user?.email?.split('@')[0] || 'John Doe';
   const navigate = useNavigate();
   const [isGoogleLinked, setIsGoogleLinked] = React.useState(user?.isGoogleLinked || false);
+  const [googleBindError, setGoogleBindError] = React.useState("");
+  const errorHandled = React.useRef(false);
 
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
@@ -52,6 +55,20 @@ function Profile() {
 
     fetchGoogleLinkStatus();
   }, []);
+
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const urlError = queryParams.get("error");
+
+  React.useEffect(() => {
+    if (urlError === "google_already_bound" && !errorHandled.current) {
+      setGoogleBindError("⚠️ This Google account is already linked to another SiteSort user.");
+      errorHandled.current = true;
+
+      // Clean URL after short delay without rerendering
+      window.history.replaceState({}, "", location.pathname);
+    }
+  }, [urlError, location.pathname]);
 
 
   return (
@@ -139,6 +156,12 @@ function Profile() {
                 ? "Your account is protected with Google login and 2FA. You can unlink your account below."
                 : "Keep your account secure by enabling Google login and 2FA. It only takes a few seconds."}
             </Typography>
+            {googleBindError && (
+              <Typography color="error" mb={2}>
+                {googleBindError}
+              </Typography>
+            )}
+
 
             <Box display="flex" justifyContent="space-between" alignItems="center" gap={2}>
               {!isGoogleLinked ? (

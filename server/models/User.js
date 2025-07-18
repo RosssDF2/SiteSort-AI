@@ -34,6 +34,16 @@ const userSchema = new mongoose.Schema({
     default: null,
   },
 
+  // Password reset fields
+  resetToken: {
+    type: String,
+    default: null
+  },
+  resetTokenExpiry: {
+    type: Date,
+    default: null
+  },
+
 
   // 🔒 2FA fields (for later setup)
   is2FAEnabled: {
@@ -45,5 +55,7 @@ const userSchema = new mongoose.Schema({
     default: null // Store TOTP secret here if using Google Authenticator
   }
 }, { timestamps: true });
+
+
 
 module.exports = mongoose.model('User', userSchema);

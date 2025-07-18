@@ -40,7 +40,7 @@ router.get("/google/bind", (req, res, next) => {
 router.get("/google/callback",
   passport.authenticate("google-bind", {
     session: false,
-    failureRedirect: "/login"
+    failureRedirect: `${process.env.CLIENT_URL}/profile?error=google_already_bound`
   }),
   (req, res) => {
     const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
@@ -50,6 +50,7 @@ router.get("/google/callback",
     res.redirect(`${process.env.CLIENT_URL}/bind/success?token=${token}`);
   }
 );
+
 
 // ✅ Step 3: Finalize binding on frontend
 router.post("/google/bind/callback", async (req, res) => {

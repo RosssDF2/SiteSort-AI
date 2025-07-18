@@ -6,7 +6,7 @@ passport.use("google-bind", new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   callbackURL: "http://localhost:3001/api/auth/google/callback",
-  passReqToCallback: true // ✅ This is missing!
+  passReqToCallback: true
 }, async (req, accessToken, refreshToken, profile, done) => {
   try {
     const loggedInUserId = req.session.tempUserId;
@@ -22,9 +22,15 @@ passport.use("google-bind", new GoogleStrategy({
 
     return done(null, user);
   } catch (err) {
+    // 👇 Catch MongoDB duplicate key error (code 11000)
+    if (err.code === 11000) {
+      req.session.googleBindError = "duplicate";
+      return done(null, false);
+    }
     return done(err);
   }
 }));
+
 
 passport.use("google-login", new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
