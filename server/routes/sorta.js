@@ -1,37 +1,24 @@
 const express = require("express");
 const router = express.Router();
-const axios = require("axios");
-const fs = require("fs");
-require("dotenv").config();
-
-const knowledge = fs.readFileSync("sorta_knowledge.txt", "utf-8");
+const askGemini = require("../utils/vertexGemini"); // This already loads the knowledge
 
 router.post("/chat", async (req, res) => {
-  const userMessage = req.body.message;
-
-  const systemPrompt = `You are Sorta, an AI assistant helping users with the SiteSort AI platform. Only use the knowledge below to answer:\n\n${knowledge}`;
+  const { message } = req.body;
+  console.log("📩 Sorta received:", message);
 
   try {
-    const response = await axios.post("https://openrouter.ai/api/v1/chat/completions", {
-      model: "mistralai/mistral-small-3.2-24b-instruct",
+    const { reply, blocked } = await askGemini(message); // ✅ send actual user message
 
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage }
-      ]
-    }, {
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:5173",  
-        "X-Title": "SiteSort AI"
-      }
-    });
+    if (blocked) {
+      return res.status(429).json({
+        reply: "⚠️ SortaBot has reached the daily AI usage limit.",
+      });
+    }
 
-    const reply = response.data.choices[0].message.content;
+    console.log("🤖 Gemini replied:", reply);
     res.json({ reply });
   } catch (err) {
-    console.error("Sorta AI Error:", err.response?.data || err.message);
+    console.error("❌ Sorta AI Error:", err.message || err);
     res.status(500).json({ reply: "⚠️ Sorta ran into an error. Try again later." });
   }
 });

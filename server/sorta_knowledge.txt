@@ -1,49 +1,69 @@
-Welcome to SiteSort AI!
+📚 Welcome to SiteSort AI – Your Friendly Construction Document Assistant
 
 📤 Uploading Files  
-- Go to the Upload tab.  
-- Drag and drop PDFs, Word, or Excel documents.  
-- The system automatically categorizes them into folders like:  
+- Go to the **Upload** tab.  
+- Drag and drop PDF, Word, or Excel files into the uploader.  
+- Files are automatically categorized into:  
   • Finance  
   • Technical Drawings  
   • Project Schedule  
-  • Tender Docs  
+  • Tender Documents  
 
 📁 Searching Documents  
-- Use the built-in search assistant to ask things like:  
+- Use the smart search assistant to find files like:  
   • “Show me the latest technical submission”  
   • “Find RI reply form from May”  
-- The AI retrieves documents and summaries based on your query.  
+- I’ll retrieve relevant documents or summaries instantly.
 
 📊 Dashboard Insights  
-- Access the Dashboard tab to see summaries and trends.  
-- You'll find:  
-  • Number of files per category  
+- The **Dashboard** tab gives you:  
+  • File counts by folder  
   • Financial summaries  
-  • Submission deadlines  
-  • Missing document alerts  
+  • Project deadlines  
+  • Alerts for missing files
 
-🧭 Help Guide  
-- You can ask things like:  
+🧭 Getting Help  
+- You can ask me:  
   • “How do I upload documents?”  
   • “Where can I find the dashboard?”  
-  • “How do I search for a document?”  
-- I only respond based on the actual system features.  
+  • “How do I search for something?”  
+- I only respond based on SiteSort's actual features. No guessing.
 
-👥 Account Info  
-- Accounts are created by the admin.  
-- You can update your name or profile photo in the Profile tab.  
+👤 Account & Profile Settings  
+- Accounts are created by admins.  
+- To update your **name**, **photo**, **birthday**, **gender**, **phone number**, **address**, or **email**, go to **Profile > Personal Info > Review Personal Information**.  
+- To change your **password**, go to **Profile > Password Manager > Change Your Password**.  
+- To view your action history, go to **Profile > View Logs**.
 
-🛠 Common Issues  
-Q: I uploaded a file but it's in the wrong folder.  
-A: You can manually re-tag or move it.  
+🔐 Google Account Binding & Security  
+- Bind your Google account via **Profile > Security Settings > Bind Google Account**.  
+- When successfully linked, the **Google** and **2FA icons** will turn green.  
+- Binding enables:  
+  • 2FA protection  
+  • Reset Password  
+  • Enhanced login security  
 
-Q: Search assistant returned no result.  
-A: Try being more specific (e.g., "May RI submission").  
+**FAQ – Google Binding & Security:**  
+- **Q:** Why must I bind my Google account?  
+  **A:** For higher security, 2FA support, and easier password recovery.  
+- **Q:** Is Google binding mandatory?  
+  **A:** No, but unlinked accounts risk losing access.  
+- **Q:** How to reset my password?  
+  **A:** Go to the login page and click **Forgot Password**. A reset link will be sent to your Gmail.  
+- **Q:** What if I didn’t bind Gmail but forgot my password?  
+  **A:** Alert your admin. They’ll manually send a reset link to your Gmail.
 
-Q: Can I delete files?  
-A: Not yet. You can re-upload corrected versions.  
+🛠 Common Issues & Fixes  
+**Q:** File ended up in the wrong folder?  
+**A:** You can manually re-tag or move it.  
 
-💡 Tips  
-- Be clear and specific when searching.  
-- You can always click the help bubble to open this chat again.
+**Q:** Search gave no results?  
+**A:** Try being more specific, e.g., “May RI submission.”  
+
+**Q:** Can I delete files?  
+**A:** Not yet! Just re-upload the updated version.
+
+💡 Power Tips  
+- Be clear and specific when searching — vague queries won’t work.  
+- You can always reopen this chat by clicking the help bubble.
+

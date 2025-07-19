@@ -20,8 +20,11 @@ function SortaBot() {
         setChatInput('');
 
         try {
-            const res = await http.post('/sorta/chat', { message: chatInput });
+            const res = await http.post('/sorta/chat', {
+                message: chatInput
+            });
             const botReply = { from: 'sorta', text: res.data.reply };
+
             setChatLog((prev) => [...prev, botReply]);
         } catch (err) {
             console.error("Sorta API error:", err);

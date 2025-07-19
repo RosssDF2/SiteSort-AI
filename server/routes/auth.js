@@ -6,6 +6,7 @@ const User = require("../models/User");
 require("../config/passport");
 const authMiddleware = require("../middlewares/authMiddleware");
 const { logoutUser } = require("../controllers/authController");
+const askGemini = require('../utils/vertexGemini');
 
 const { loginUser, verify2FA } = require("../controllers/authController");
 const upload = require("../middlewares/uploadMiddleware");
@@ -256,5 +257,18 @@ router.delete("/admin/users/:id", authMiddleware, async (req, res) => {
   }
 });
 
+router.post("/ask", async (req, res) => {
+  const { prompt } = req.body;
+
+  try {
+    const { reply, blocked } = await askGemini(prompt);
+    res.json({ response: output });
+  } catch (err) {
+    console.error("Gemini error:", err);
+    res.status(500).json({ error: "Failed to generate response" });
+  }
+});
+
+module.exports = router;
 
 module.exports = router;
