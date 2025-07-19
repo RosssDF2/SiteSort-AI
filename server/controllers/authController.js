@@ -96,8 +96,12 @@ exports.verify2FA = async (req, res) => {
       email: user.email,
       role: user.role,
       username: user.username,
+      avatar: user.avatar, // ✅ add this
+      is2FAEnabled: user.is2FAEnabled,
+      isGoogleLinked: user.isGoogleLinked
     }
   });
+
 };
 
 exports.requestPasswordReset = async (req, res) => {
