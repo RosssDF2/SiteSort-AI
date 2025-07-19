@@ -11,6 +11,8 @@ import GoogleLoginSuccess from "./pages/GoogleLoginSuccess";
 import RequestReset from './pages/RequestReset';
 import ResetPassword from './pages/ResetPassword';
 import Personalize from './pages/Personalize';
+import AuditLog from "./pages/AuditLog"; // ✅
+
 
 function App() {
   return (
@@ -28,6 +30,8 @@ function App() {
         <Route path="/forgot" element={<RequestReset />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/personalize" element={<Personalize />} />
+        <Route path="/logs" element={<AuditLog />} />  {/* ✅ Add this */}
+
       </Routes>
     </BrowserRouter>
   );

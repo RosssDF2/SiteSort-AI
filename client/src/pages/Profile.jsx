@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import SortaBot from '../components/SortaBot';
 import GoogleIcon from '@mui/icons-material/Google';
 import { useLocation } from 'react-router-dom'; // already imported
+import HistoryIcon from "@mui/icons-material/History";
 
 function Profile() {
 
@@ -34,11 +35,27 @@ function Profile() {
   const handleClick = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const token = localStorage.getItem("token");
+
+    // 🔐 Tell backend to log the logout
+    if (token) {
+      try {
+        await fetch("http://localhost:3001/api/auth/logout", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (err) {
+        console.error("Failed to log logout:", err);
+      }
+    }
+
+    // 🚪 Clear session
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/login");
   };
+
 
   React.useEffect(() => {
     const fetchGoogleLinkStatus = async () => {
@@ -104,8 +121,12 @@ function Profile() {
           </Box>
 
           <Divider />
-          <MenuItem disabled>➕ Add account</MenuItem>
-          <MenuItem disabled>➕ Add account</MenuItem>
+          <MenuItem onClick={() => navigate("/logs")}>
+            <HistoryIcon sx={{ fontSize: 18, color: "text.secondary", mr: 1 }} />
+            View Logs
+          </MenuItem>
+
+
 
           <Box px={2} py={1}>
             <Button

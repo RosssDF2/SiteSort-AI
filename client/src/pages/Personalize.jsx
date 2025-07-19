@@ -19,6 +19,7 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import AppsIcon from "@mui/icons-material/Apps";
 import SettingsIcon from "@mui/icons-material/Settings";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import HistoryIcon from "@mui/icons-material/History";
 
 function Personalize() {
     const { user, setUser } = useContext(UserContext);
@@ -72,11 +73,27 @@ function Personalize() {
 
     const handleClick = (event) => setAnchorEl(event.currentTarget);
     const handleClose = () => setAnchorEl(null);
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        const token = localStorage.getItem("token");
+
+        // 🔐 Tell backend to log the logout
+        if (token) {
+            try {
+                await fetch("http://localhost:3001/api/auth/logout", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            } catch (err) {
+                console.error("Failed to log logout:", err);
+            }
+        }
+
+        // 🚪 Clear session
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         navigate("/login");
     };
+
 
     return (
         <MainLayout>
@@ -100,8 +117,12 @@ function Personalize() {
                         </Typography>
                     </Box>
                     <Divider />
-                    <MenuItem disabled>➕ Add account</MenuItem>
-                    <MenuItem disabled>➕ Add account</MenuItem>
+                    <MenuItem onClick={() => navigate("/logs")}>
+                        <HistoryIcon sx={{ fontSize: 18, color: "text.secondary", mr: 1 }} />
+                        View Logs
+                    </MenuItem>
+
+
                     <Box px={2} py={1}>
                         <Button variant="outlined" color="error" fullWidth onClick={handleLogout}>
                             Sign out

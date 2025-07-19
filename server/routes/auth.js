@@ -4,11 +4,12 @@ const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 require("../config/passport");
+const authMiddleware = require("../middlewares/authMiddleware");
+const { logoutUser } = require("../controllers/authController");
 
 const { loginUser, verify2FA } = require("../controllers/authController");
 const upload = require("../middlewares/uploadMiddleware");
 const { personalizeUser } = require("../controllers/authController");
-const authMiddleware = require("../middlewares/authMiddleware");
 
 // ✅ Login & 2FA
 router.post("/login", loginUser);
@@ -164,5 +165,96 @@ const { requestPasswordReset, resetPasswordWithToken } = require("../controllers
 
 router.post("/request-reset", requestPasswordReset);
 router.post("/reset-password", resetPasswordWithToken);
+
+const logAction = require("../utils/logAction");
+
+router.post("/logout", authMiddleware, logoutUser);
+
+// 🔐 Admin creates a new user (e.g., manager)
+router.post("/admin/users", authMiddleware, async (req, res) => {
+  const { email, password, role, username } = req.body;
+  if (!email || !password || !role || !username) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const existing = await User.findOne({ email });
+    if (existing) return res.status(409).json({ error: "Email already exists" });
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    const newUser = await User.create({
+      email,
+      password: hashed,
+      role,
+      username
+    });
+
+    await logAction({
+      userId: req.user.id,
+      action: `Created user (${role})`,
+      req,
+      metadata: { createdUserId: newUser._id }
+    });
+
+    res.status(201).json({ message: "User created", userId: newUser._id });
+  } catch (err) {
+    console.error("❌ Error creating user:", err);
+    res.status(500).json({ error: "Failed to create user" });
+  }
+});
+
+// 🔍 Admin fetches all users (except self)
+router.get("/admin/users", authMiddleware, async (req, res) => {
+  try {
+    const users = await User.find({ _id: { $ne: req.user.id } });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+// ✏️ Admin updates a user (username/password only)
+router.put("/admin/users/:id", authMiddleware, async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const updates = {};
+    if (username) updates.username = username;
+    if (password) updates.password = await bcrypt.hash(password, 10);
+
+    const updated = await User.findByIdAndUpdate(req.params.id, updates, { new: true });
+    if (!updated) return res.status(404).json({ error: "User not found" });
+
+    await logAction({
+      userId: req.user.id,
+      action: `Updated user (${updated.email})`,
+      req
+    });
+
+    res.json({ message: "User updated" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update user" });
+  }
+});
+
+// 🗑 Admin deletes a user
+router.delete("/admin/users/:id", authMiddleware, async (req, res) => {
+  try {
+    const deleted = await User.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: "User not found" });
+
+    await logAction({
+      userId: req.user.id,
+      action: `Deleted user (${deleted.email})`,
+      req
+    });
+
+    res.json({ message: "User deleted" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete user" });
+  }
+});
+
 
 module.exports = router;

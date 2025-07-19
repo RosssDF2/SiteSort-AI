@@ -6,6 +6,7 @@ const session = require("express-session");
 const passport = require("passport");
 const path = require("path");
 const { google } = require("googleapis");
+const logRoutes = require("./routes/logs");
 
 const app = express();
 const port = process.env.APP_PORT || 3001;
@@ -79,6 +80,7 @@ async function listDriveFiles() {
 }
 
 app.use("/avatars", express.static("public/avatars"));
+app.use("/api/logs", logRoutes);
 
 
 listDriveFiles().catch(console.error);

@@ -1,26 +1,25 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const User = require("../models/User");
-const { send2FACode } = require("../utils/mailer");
-
+const { send2FACode, sendResetEmail } = require("../utils/mailer");
+const generateResetToken = require("../utils/generateToken");
+const logAction = require("../utils/logAction"); // ✅ Logging utility
 
 let temp2FACodes = {}; // key = user._id, value = { code, expires }
+
+exports.temp2FACodes = temp2FACodes;
 
 exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ error: "Invalid email or password" });
-    }
+    if (!user) return res.status(400).json({ error: "Invalid email or password" });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ error: "Invalid email or password" });
-    }
+    if (!isMatch) return res.status(400).json({ error: "Invalid email or password" });
 
-    // ✅ 2FA REQUIRED: only for managers with Google linked
+    // ✅ 2FA (only for managers with Google linked)
     if (user.role === "manager" && user.isGoogleLinked) {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expires = Date.now() + 5 * 60 * 1000;
@@ -28,21 +27,25 @@ exports.loginUser = async (req, res) => {
 
       const sendTo = user.googleEmail || user.email;
       await send2FACode(sendTo, code);
-      console.log("Sending 2FA to:", sendTo)
       return res.json({
         message: "2FA code sent",
         tempUserId: user._id,
-        sendTo, // ✅ required
+        sendTo,
       });
     }
 
-
-    // ✅ NO 2FA: return full login
+    // ✅ Normal login (no 2FA)
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
+
+    await logAction({
+      userId: user._id,
+      action: "User logged in",
+      req,
+    });
 
     return res.json({
       token,
@@ -51,7 +54,7 @@ exports.loginUser = async (req, res) => {
         email: user.email,
         role: user.role,
         username: user.username,
-        avatar: user.avatar, // ✅ add this line
+        avatar: user.avatar,
         is2FAEnabled: user.is2FAEnabled,
         isGoogleLinked: user.isGoogleLinked,
       }
@@ -62,7 +65,6 @@ exports.loginUser = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-
 
 exports.verify2FA = async (req, res) => {
   const { userId, code } = req.body;
@@ -81,20 +83,22 @@ exports.verify2FA = async (req, res) => {
     { expiresIn: "1h" }
   );
 
+  await logAction({
+    userId: user._id,
+    action: "User logged in via 2FA",
+    req,
+  });
+
   res.json({
     token,
     user: {
       id: user.id,
       email: user.email,
       role: user.role,
-      username: user.username // ✅ Add this
+      username: user.username,
     }
   });
-
 };
-
-const generateResetToken = require('../utils/generateToken');
-const { sendResetEmail } = require('../utils/mailer'); // 👈 make sure this is imported
 
 exports.requestPasswordReset = async (req, res) => {
   const { email } = req.body;
@@ -103,36 +107,31 @@ exports.requestPasswordReset = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // 1. Generate token and expiry
     const token = generateResetToken();
-    const expiry = Date.now() + 1000 * 60 * 30; // 30 minutes
+    const expiry = Date.now() + 1000 * 60 * 30;
 
     user.resetToken = token;
     user.resetTokenExpiry = expiry;
     await user.save();
 
-    // 2. Build reset URL
     const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
 
-    // 3. Determine recipients
     const recipients = [user.email];
     if (user.isGoogleLinked && user.googleEmail && user.googleEmail !== user.email) {
       recipients.push(user.googleEmail);
     }
 
-    // 4. Send email to each recipient
     for (const email of recipients) {
-      console.log(`📧 Sending reset link to: ${email}`);
-      await sendResetEmail(email, resetUrl); // 🔁 uses mailer util
+      await sendResetEmail(email, resetUrl);
     }
 
     res.json({ message: "Password reset link sent" });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 };
-
 
 exports.resetPasswordWithToken = async (req, res) => {
   const { token, newPassword } = req.body;
@@ -146,34 +145,67 @@ exports.resetPasswordWithToken = async (req, res) => {
     if (!user) return res.status(400).json({ error: "Invalid or expired token" });
 
     const hashed = await bcrypt.hash(newPassword, 10);
-
     user.password = hashed;
     user.resetToken = null;
     user.resetTokenExpiry = null;
     await user.save();
 
+    await logAction({
+      userId: user._id,
+      action: "Reset password via token",
+      req,
+    });
+
     res.json({ message: "Password reset successful" });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 };
+
 exports.personalizeUser = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (req.body.username) user.username = req.body.username;
-    if (req.body.gender) user.gender = req.body.gender;
-    if (req.body.phone) user.phone = req.body.phone;
-    if (req.body.gmailEmail) user.gmailEmail = req.body.gmailEmail;
-    if (req.body.accountEmail) user.accountEmail = req.body.accountEmail;
+    const updatedFields = [];
+    if (req.body.username && req.body.username !== user.username) {
+      user.username = req.body.username;
+      updatedFields.push("username");
+    }
+    if (req.body.gender && req.body.gender !== user.gender) {
+      user.gender = req.body.gender;
+      updatedFields.push("gender");
+    }
+    if (req.body.phone && req.body.phone !== user.phone) {
+      user.phone = req.body.phone;
+      updatedFields.push("phone");
+    }
+    if (req.body.gmailEmail && req.body.gmailEmail !== user.gmailEmail) {
+      user.gmailEmail = req.body.gmailEmail;
+      updatedFields.push("gmailEmail");
+    }
+    if (req.body.accountEmail && req.body.accountEmail !== user.accountEmail) {
+      user.accountEmail = req.body.accountEmail;
+      updatedFields.push("accountEmail");
+    }
     if (req.file) {
-      user.avatar = `/avatars/${req.file.filename}`; // served from public folder
+      user.avatar = `/avatars/${req.file.filename}`;
+      updatedFields.push("avatar");
     }
 
     await user.save();
+
+    if (updatedFields.length > 0) {
+      await logAction({
+        userId: user._id,
+        action: "Updated profile",
+        req,
+        metadata: { fieldsChanged: updatedFields },
+      });
+    }
 
     res.json({
       id: user._id,
@@ -186,7 +218,7 @@ exports.personalizeUser = async (req, res) => {
       gmailEmail: user.gmailEmail,
       accountEmail: user.accountEmail,
       is2FAEnabled: user.is2FAEnabled,
-      isGoogleLinked: user.isGoogleLinked
+      isGoogleLinked: user.isGoogleLinked,
     });
 
   } catch (err) {
@@ -195,4 +227,17 @@ exports.personalizeUser = async (req, res) => {
   }
 };
 
-exports.temp2FACodes = temp2FACodes;
+exports.logoutUser = async (req, res) => {
+  try {
+    await logAction({
+      userId: req.user.id,
+      action: "User logged out",
+      req
+    });
+
+    res.json({ message: "Logged out" });
+  } catch (err) {
+    console.error("Logout log error:", err);
+    res.status(500).json({ error: "Logout failed" });
+  }
+};
