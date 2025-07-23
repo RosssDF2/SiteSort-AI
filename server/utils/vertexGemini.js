@@ -136,4 +136,23 @@ async function askGemini(prompt) {
     }
 }
 
-module.exports = askGemini;
+
+async function generateBudgetJSON(prompt) {
+    try {
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+
+        const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text;
+        return text;
+    } catch (err) {
+        console.error("❌ Gemini Budget JSON error:", err.message);
+        throw err;
+    }
+}
+
+module.exports = {
+    askGemini,
+    generateBudgetJSON, // 👈 Add this
+};
+

@@ -11,6 +11,9 @@ const insightRoutes = require("./routes/insightRoutes");
 const dashboard = require("./routes/dashboard");
 const app = express();
 const port = process.env.APP_PORT || 3001;
+const projectRoutes = require('./routes/projectRoutes');
+const fileRoutes = require('./routes/fileRoutes');
+const budgetRoutes = require("./routes/budgetRoutes");
 
 // ✅ Middleware
 app.use(cors({
@@ -22,6 +25,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static("public"));
 app.use("/api/insights", insightRoutes);
 app.use("/api/dashboard", dashboard);
+app.use('/api/projects', projectRoutes);
+app.use('/api/files', fileRoutes);
+app.use("/api/budget", budgetRoutes);
 
 // ✅ Session & Passport
 app.use(session({

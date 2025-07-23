@@ -21,6 +21,9 @@ import {
 import axios from "axios";
 import MainLayout from "../layouts/MainLayout";
 import { UserContext } from "../contexts/UserContext";
+import ProjectFileExplorer from "../components/ProjectFileExplorer";
+import BudgetChart from "../components/BudgetChart";
+
 
 // --- Hardcoded PDF Content for Demonstration ---
 // This content is extracted from your "Project Budget 1.pdf".
@@ -449,42 +452,54 @@ const Dashboard = () => {
                 {loading ? <CircularProgress sx={{ m: 4 }} /> : error ? <Alert severity="error" sx={{ m: 4 }}>{error}</Alert> : !data ? <Alert severity="warning" sx={{ m: 4 }}>No dashboard data available.</Alert> : (
                     <>
                         <Grid container spacing={3}>
-                            <Grid item xs={12} md={4}><StatCard title="📁 Total Files" value={data.totalFiles} /></Grid>
-                            <Grid item xs={12} md={4}><StatCard title="📨 RFIs This Week" value={data.rfiCountThisWeek} /></Grid>
-                            {viewMode === "advanced" && (
+                            {viewMode === "basic" && (
                                 <>
-                                    <Grid item xs={12} md={6}>
-                                        <Card sx={{ height: "100%", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-                                            <CardContent>
-                                                <Typography variant="h6">📂 Top Folders</Typography>
-                                                <Typography>{data.topFolders?.length ? data.topFolders.map(f => `${f.name} (${f.count})`).join(", ") : "No folders"}</Typography>
-                                            </CardContent>
-                                        </Card>
+                                    <Grid item xs={12} md={4}>
+                                        <StatCard title="📁 Total Files" value={data.totalFiles} />
                                     </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <Card sx={{ height: "100%", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-                                            <CardContent>
-                                                <Typography variant="h6">🧠 AI Insight</Typography>
-                                                {loadingAiInsight ? (
-                                                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 60 }}>
-                                                        <CircularProgress size={24} />
-                                                    </Box>
-                                                ) : (
-                                                    <Typography>{aiInsight}</Typography>
-                                                )}
-                                                <Button
-                                                    variant="contained"
-                                                    onClick={generateAIInsight}
-                                                    disabled={loadingAiInsight}
-                                                    sx={{ mt: 2, borderRadius: "6px", backgroundColor: "#ED6C02", '&:hover': { backgroundColor: "#E65100" } }}
-                                                >
-                                                    {loadingAiInsight ? <CircularProgress size={20} color="inherit" /> : 'Generate AI Insight'}
-                                                </Button>
-                                            </CardContent>
-                                        </Card>
+                                    <Grid item xs={12} md={4}>
+                                        <StatCard title="📨 RFIs This Week" value={data.rfiCountThisWeek} />
                                     </Grid>
                                 </>
                             )}
+
+
+                            {viewMode === "advanced" && (
+                                <>
+                                    <Grid item xs={12}>
+                                        <ProjectFileExplorer />
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                        <BudgetChart />
+                                    </Grid>
+
+
+
+                                </>
+                            )}
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            <Card sx={{ height: "100%", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+                                <CardContent>
+                                    <Typography variant="h6">🧠 AI Insight</Typography>
+                                    {loadingAiInsight ? (
+                                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 60 }}>
+                                            <CircularProgress size={24} />
+                                        </Box>
+                                    ) : (
+                                        <Typography>{aiInsight}</Typography>
+                                    )}
+                                    <Button
+                                        variant="contained"
+                                        onClick={generateAIInsight}
+                                        disabled={loadingAiInsight}
+                                        sx={{ mt: 2, borderRadius: "6px", backgroundColor: "#ED6C02", '&:hover': { backgroundColor: "#E65100" } }}
+                                    >
+                                        {loadingAiInsight ? <CircularProgress size={20} color="inherit" /> : 'Generate AI Insight'}
+                                    </Button>
+                                </CardContent>
+                            </Card>
                         </Grid>
 
                         <Box mt={6} flexGrow={1} display="flex" flexDirection="column" justifyContent="flex-end">
