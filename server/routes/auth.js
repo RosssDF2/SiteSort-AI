@@ -6,7 +6,7 @@ const User = require("../models/User");
 require("../config/passport");
 const authMiddleware = require("../middlewares/authMiddleware");
 const { logoutUser } = require("../controllers/authController");
-const askGemini = require('../utils/vertexGemini');
+const { askGemini } = require('../utils/vertexGemini');
 
 const { loginUser, verify2FA } = require("../controllers/authController");
 const upload = require("../middlewares/uploadMiddleware");

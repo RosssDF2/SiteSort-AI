@@ -479,28 +479,7 @@ const Dashboard = () => {
                             )}
                         </Grid>
 
-                        <Grid item xs={12} md={6}>
-                            <Card sx={{ height: "100%", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-                                <CardContent>
-                                    <Typography variant="h6">🧠 AI Insight</Typography>
-                                    {loadingAiInsight ? (
-                                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 60 }}>
-                                            <CircularProgress size={24} />
-                                        </Box>
-                                    ) : (
-                                        <Typography>{aiInsight}</Typography>
-                                    )}
-                                    <Button
-                                        variant="contained"
-                                        onClick={generateAIInsight}
-                                        disabled={loadingAiInsight}
-                                        sx={{ mt: 2, borderRadius: "6px", backgroundColor: "#ED6C02", '&:hover': { backgroundColor: "#E65100" } }}
-                                    >
-                                        {loadingAiInsight ? <CircularProgress size={20} color="inherit" /> : 'Generate AI Insight'}
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        </Grid>
+                        
 
                         <Box mt={6} flexGrow={1} display="flex" flexDirection="column" justifyContent="flex-end">
                             <Card sx={{ minHeight: "45vh", display: "flex", flexDirection: "column", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>

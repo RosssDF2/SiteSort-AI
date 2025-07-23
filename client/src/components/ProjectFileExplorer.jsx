@@ -145,7 +145,7 @@ Remaining: $${remaining.toLocaleString()}`);
                 { name: "Remaining", value: remaining }
             ]);
 
-            alert("✅ Budget extracted:\n" + JSON.stringify(res3.data, null, 2));
+            console.log("✅ Budget data:", res3.data);
         } catch (err) {
             console.error("❌ Budget AI error", err);
             alert("❌ AI Budget Extraction Failed:\n" + (err.response?.data?.error || err.message));

@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const askGemini = require("../utils/vertexGemini"); // This already loads the knowledge
+const { askGemini } = require("../utils/vertexGemini");
 
 router.post("/chat", async (req, res) => {
   const { message } = req.body;
