@@ -152,20 +152,20 @@ const Dashboard = () => {
     };
 
     const handleDialogClose = (result) => {
-  setDialogOpen(false);
+        setDialogOpen(false);
 
-  if (dialogCallback) {
-    if (isPrompt) {
-      dialogCallback(result ? dialogInput : null); // for Edit
-    } else {
-      dialogCallback(result); // for Confirm Delete
-    }
-  }
-};
+        if (dialogCallback) {
+            if (isPrompt) {
+                dialogCallback(result ? dialogInput : null); // for Edit
+            } else {
+                dialogCallback(result); // for Confirm Delete
+            }
+        }
+    };
     const handleApply = async () => {
         setLoading(true);
         try {
-            const res = await axios.get("/api/dashboard", {
+            const res = await axios.get("/api/insights", {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
                 },
@@ -182,59 +182,90 @@ const Dashboard = () => {
         }
     };
 
-    const handleAddInsight = () => {
+    const handleAddInsight = async () => {
         if (newInsight.trim() === "") {
             showDialog("Input Required", "Insight summary cannot be empty!");
             return;
         }
-        const newEntry = {
+
+        const entry = {
             date: new Date().toLocaleDateString("en-GB"),
             summary: newInsight,
         };
-        setInsights([...insights, newEntry]);
-        setNewInsight("");
-        setSnackbarMessage("Insight log added!");
-        setSnackbarSeverity("success");
-        setSnackbarOpen(true);
+
+        try {
+            const res = await axios.post("/api/insights", entry, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
+            setInsights([res.data, ...insights]);
+            setNewInsight("");
+            setSnackbarMessage("Insight added!");
+            setSnackbarSeverity("success");
+            setSnackbarOpen(true);
+        } catch (err) {
+            console.error(err);
+            setSnackbarMessage("Failed to add insight");
+            setSnackbarSeverity("error");
+            setSnackbarOpen(true);
+        }
     };
 
     const handleDeleteInsight = (index) => {
-        showDialog(
-            "Confirm Delete",
-            "Are you sure you want to delete this insight?",
-            false,
-            (confirmed) => {
-                if (confirmed) {
+        showDialog("Confirm Delete", "Are you sure you want to delete this insight?", false, async (confirmed) => {
+            if (confirmed) {
+                try {
+                    const insightId = insights[index]._id;
+                    await axios.delete(`/api/insights/${insightId}`, {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        },
+                    });
+
                     setInsights(insights.filter((_, i) => i !== index));
-                    setSnackbarMessage("Insight log deleted!");
+                    setSnackbarMessage("Insight deleted!");
                     setSnackbarSeverity("success");
+                    setSnackbarOpen(true);
+                } catch (err) {
+                    console.error(err);
+                    setSnackbarMessage("Failed to delete insight");
+                    setSnackbarSeverity("error");
                     setSnackbarOpen(true);
                 }
             }
-        );
+        });
     };
 
     const handleEditInsight = (index) => {
-        showDialog(
-            "Edit Insight",
-            "Edit summary:",
-            true, // isPrompt = true
-            (edited) => {
-                if (edited !== null && edited.trim() !== "") {
+        showDialog("Edit Insight", "Edit summary:", true, async (edited) => {
+            if (edited !== null && edited.trim() !== "") {
+                try {
+                    const insightId = insights[index]._id;
+                    const res = await axios.put(`/api/insights/${insightId}`, { summary: edited }, {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        },
+                    });
+
                     const updated = [...insights];
-                    updated[index].summary = edited;
+                    updated[index] = res.data;
                     setInsights(updated);
-                    setSnackbarMessage("Insight log updated!");
+
+                    setSnackbarMessage("Insight updated!");
                     setSnackbarSeverity("success");
                     setSnackbarOpen(true);
-                } else if (edited !== null) {
-                    showDialog("Input Required", "Insight summary cannot be empty!");
+                } catch (err) {
+                    console.error(err);
+                    setSnackbarMessage("Failed to update insight");
+                    setSnackbarSeverity("error");
+                    setSnackbarOpen(true);
                 }
-            },
-            insights[index].summary // initialValue
-        );
+            } else if (edited !== null) {
+                showDialog("Input Required", "Insight summary cannot be empty!");
+            }
+        }, insights[index].summary);
     };
-
     // Function to generate AI insight directly from frontend using hardcoded PDF content
     const generateAIInsight = async () => {
         if (!PROJECT_BUDGET_PDF_CONTENT.trim()) {
@@ -326,33 +357,37 @@ const Dashboard = () => {
 
 
     useEffect(() => {
-        const getDashboard = async () => {
+        const fetchDashboardAndInsights = async () => {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                setError("Missing token. Please log in again.");
+                setLoading(false);
+                return;
+            }
+
             try {
-                const token = localStorage.getItem("token");
-                if (!token) {
-                    setError("Missing token. Please log in again.");
-                    setLoading(false);
-                    return;
-                }
-                const res = await axios.get("/api/dashboard", {
+                const dashRes = await axios.get("/api/dashboard", {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                if (!res.data) {
-                    setError("No data received from server.");
-                    setLoading(false);
-                    return;
-                }
-                setData(res.data);
-                setInsights(res.data.insightLogs || []); // Assuming insightLogs might come from backend
+                console.log("✅ Dashboard response:", dashRes.data);
+                setData(dashRes.data);
+
+                const insightRes = await axios.get("/api/insights", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                console.log("✅ Insight response:", insightRes.data);
+                setInsights(insightRes.data);
             } catch (err) {
-                console.error("❌ Dashboard error:", err);
-                setError("Failed to load dashboard. Please try again later.");
+                console.error("❌ Error fetching dashboard or insights:", err.response?.data || err.message);
+                setError("Failed to load dashboard and insights.");
             } finally {
                 setLoading(false);
             }
         };
-        getDashboard();
+
+        fetchDashboardAndInsights();
     }, []);
+
 
     const handleSnackbarClose = (event, reason) => {
         if (reason === 'clickaway') {
@@ -549,27 +584,27 @@ const Dashboard = () => {
                         />
                     )}
                 </DialogContent>
-               <DialogActions>
-  {dialogCallback ? (
-    // If there's a callback (confirm or prompt), show Cancel + Confirm button
-    <>
-      <Button onClick={() => handleDialogClose(false)}>
-        Cancel
-      </Button>
-      <Button
-        onClick={() => handleDialogClose(true)}
-        color="error"
-      >
-        {isPrompt ? 'OK' : 'Delete'}
-      </Button>
-    </>
-  ) : (
-    // If no callback (simple alert), show single Close button
-    <Button onClick={() => handleDialogClose(true)}>
-      Close
-    </Button>
-  )}
-</DialogActions>
+                <DialogActions>
+                    {dialogCallback ? (
+                        // If there's a callback (confirm or prompt), show Cancel + Confirm button
+                        <>
+                            <Button onClick={() => handleDialogClose(false)}>
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={() => handleDialogClose(true)}
+                                color="error"
+                            >
+                                {isPrompt ? 'OK' : 'Delete'}
+                            </Button>
+                        </>
+                    ) : (
+                        // If no callback (simple alert), show single Close button
+                        <Button onClick={() => handleDialogClose(true)}>
+                            Close
+                        </Button>
+                    )}
+                </DialogActions>
 
             </Dialog>
         </MainLayout>

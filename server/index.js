@@ -7,7 +7,8 @@ const passport = require("passport");
 const path = require("path");
 const { google } = require("googleapis");
 const logRoutes = require("./routes/logs");
-
+const insightRoutes = require("./routes/insightRoutes");
+const dashboard = require("./routes/dashboard");
 const app = express();
 const port = process.env.APP_PORT || 3001;
 
@@ -19,6 +20,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static("public"));
+app.use("/api/insights", insightRoutes);
+app.use("/api/dashboard", dashboard);
 
 // ✅ Session & Passport
 app.use(session({
