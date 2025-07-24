@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Typography } from '@mui/material';
 import { useContext } from 'react';
 import { UserContext } from '../contexts/UserContext';
+import SmartToyIcon from '@mui/icons-material/SmartToy'; // top of file
 
 
 
@@ -13,7 +14,8 @@ import { UserContext } from '../contexts/UserContext';
 const navItems = [
   { label: 'Profile', icon: <Person />, path: '/profile' },
   { label: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
-  { label: 'SiteSort AI', icon: <Lock />, path: '/sitesort-ai' },
+  { label: 'ZARA ChatBot', icon: <SmartToyIcon />, path: '/chatbot' },
+
   { label: 'AI Upload', icon: <CloudUpload />, path: '/upload' },
   { label: 'About', icon: <Info />, path: '/about' },
 ];
