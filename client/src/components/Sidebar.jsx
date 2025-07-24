@@ -14,7 +14,7 @@ import SmartToyIcon from '@mui/icons-material/SmartToy'; // top of file
 const navItems = [
   { label: 'Profile', icon: <Person />, path: '/profile' },
   { label: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
-  { label: 'ZARA ChatBot', icon: <SmartToyIcon />, path: '/chatbot' },
+  { label: 'SiteSort AI', icon: <SmartToyIcon />, path: '/chatbot' },
 
   { label: 'AI Upload', icon: <CloudUpload />, path: '/upload' },
   { label: 'About', icon: <Info />, path: '/about' },
