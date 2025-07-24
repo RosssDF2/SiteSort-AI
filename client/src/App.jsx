@@ -14,7 +14,6 @@ import Personalize from './pages/Personalize';
 import AuditLog from "./pages/AuditLog";
 import ChatBot from "./pages/ChatBot"; // ✅ ZARA's ChatBot Page
 import About from "./pages/About";     // ✅ If you have an About page
-import Upload from "./pages/Upload";   // ✅ AI Upload page if exists
 
 function App() {
   return (
@@ -35,7 +34,6 @@ function App() {
         <Route path="/logs" element={<AuditLog />} />
         <Route path="/chatbot" element={<ChatBot />} />     {/* ✅ ZARA ChatBot */}
         <Route path="/about" element={<About />} />         {/* ✅ About Page */}
-        <Route path="/upload" element={<Upload />} />       {/* ✅ AI Upload */}
       </Routes>
     </BrowserRouter>
   );

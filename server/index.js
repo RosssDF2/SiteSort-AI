@@ -14,6 +14,9 @@ const port = process.env.APP_PORT || 3001;
 const projectRoutes = require('./routes/projectRoutes');
 const fileRoutes = require('./routes/fileRoutes');
 const budgetRoutes = require("./routes/budgetRoutes");
+const chatRoutes = require("./routes/chatRoutes");
+const bodyParser = require("body-parser");
+const dotenv = require("dotenv");
 
 // ✅ Middleware
 app.use(cors({
@@ -28,6 +31,7 @@ app.use("/api/dashboard", dashboard);
 app.use('/api/projects', projectRoutes);
 app.use('/api/files', fileRoutes);
 app.use("/api/budget", budgetRoutes);
+dotenv.config();
 
 // ✅ Session & Passport
 app.use(session({
@@ -90,6 +94,8 @@ async function listDriveFiles() {
 
 app.use("/avatars", express.static("public/avatars"));
 app.use("/api/logs", logRoutes);
+app.use("/", chatRoutes);
+app.use(bodyParser.json());
 
 
 listDriveFiles().catch(console.error);
