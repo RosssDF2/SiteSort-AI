@@ -1,69 +1,37 @@
 // src/pages/Profile.jsx
-import React, { useState } from 'react';
-import { Box, Typography, Grid, Paper, Button, Chip, Avatar, IconButton } from '@mui/material';
+import React, { useState, useEffect, useRef, useContext } from 'react';
+import {
+  Box, Typography, Grid, Paper, Button, Chip, Avatar
+} from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import InfoIcon from '@mui/icons-material/Info';
 import SecurityIcon from '@mui/icons-material/Security';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import AppsIcon from '@mui/icons-material/Apps';
 import SettingsIcon from '@mui/icons-material/Settings';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import MainLayout from '../layouts/MainLayout';
-import { UserContext } from '../contexts/UserContext';
-import { Menu, MenuItem, Divider } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import SortaBot from '../components/SortaBot';
 import GoogleIcon from '@mui/icons-material/Google';
-import { useLocation } from 'react-router-dom'; // already imported
-import HistoryIcon from "@mui/icons-material/History";
+import MainLayout from '../layouts/MainLayout';
+import SortaBot from '../components/SortaBot';
+import { UserContext } from '../contexts/UserContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 function Profile() {
-
-  const { user } = React.useContext(UserContext);
+  const { user } = useContext(UserContext);
   const username = user?.username || user?.email?.split('@')[0] || 'John Doe';
   const navigate = useNavigate();
-  const [isGoogleLinked, setIsGoogleLinked] = React.useState(user?.isGoogleLinked || false);
-  const [googleBindError, setGoogleBindError] = React.useState("");
-  const errorHandled = React.useRef(false);
-  const [resetMessage, setResetMessage] = useState("");
 
+  const [isGoogleLinked, setIsGoogleLinked] = useState(user?.isGoogleLinked || false);
+  const [googleBindError, setGoogleBindError] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
+  const errorHandled = useRef(false);
 
-  const [anchorEl, setAnchorEl] = React.useState(null);
-  const open = Boolean(anchorEl);
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const urlError = queryParams.get('error');
 
-  const handleClick = (event) => setAnchorEl(event.currentTarget);
-  const handleClose = () => setAnchorEl(null);
-
-  const handleLogout = async () => {
-    const token = localStorage.getItem("token");
-
-    // 🔐 Tell backend to log the logout
-    if (token) {
-      try {
-        await fetch("http://localhost:3001/api/auth/logout", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      } catch (err) {
-        console.error("Failed to log logout:", err);
-      }
-    }
-
-    // 🚪 Clear session
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
-
-
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchGoogleLinkStatus = async () => {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem('token');
       const res = await fetch("http://localhost:3001/api/auth/check-google-link", {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.ok) {
@@ -71,85 +39,25 @@ function Profile() {
         setIsGoogleLinked(data.isGoogleLinked);
       }
     };
-
     fetchGoogleLinkStatus();
   }, []);
 
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const urlError = queryParams.get("error");
-
-  React.useEffect(() => {
-    if (urlError === "google_already_bound" && !errorHandled.current) {
+  useEffect(() => {
+    if (urlError === 'google_already_bound' && !errorHandled.current) {
       setGoogleBindError("⚠️ This Google account is already linked to another SiteSort user.");
       errorHandled.current = true;
-
-      // Clean URL after short delay without rerendering
       window.history.replaceState({}, "", location.pathname);
     }
   }, [urlError, location.pathname]);
 
-
   return (
     <MainLayout>
-      {/* Top Right Icons */}
-      <Box display="flex" justifyContent="flex-end" alignItems="center" gap={2} mb={3}>
-        <IconButton><HelpOutlineIcon /></IconButton>
-        <IconButton><AppsIcon /></IconButton>
-        <IconButton><SettingsIcon /></IconButton>
-        <IconButton onClick={handleClick}>
-          <AccountCircleIcon />
-        </IconButton>
-        <Menu
-          anchorEl={anchorEl}
-          open={open}
-          onClose={handleClose}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        >
-          <Box px={2} py={2} display="flex" alignItems="center" gap={2}>
-            <Avatar
-              src={user?.avatar ? `http://localhost:3001${user.avatar}` : undefined}
-              sx={{ width: 48, height: 48 }}
-            />
-            <Box>
-              <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
-              <Typography variant="subtitle1">
-                Hi, <span style={{ color: "#10B981" }}>{username}</span>
-              </Typography>
-            </Box>
-          </Box>
-
-          <Divider />
-          <MenuItem onClick={() => navigate("/logs")}>
-            <HistoryIcon sx={{ fontSize: 18, color: "text.secondary", mr: 1 }} />
-            View Logs
-          </MenuItem>
-
-
-
-          <Box px={2} py={1}>
-            <Button
-              variant="outlined"
-              color="error"
-              fullWidth
-              onClick={handleLogout}
-            >
-              Sign out
-            </Button>
-          </Box>
-        </Menu>
-
-
-      </Box>
-
-      {/* Welcome Message with Avatar */}
+      {/* Welcome Message */}
       <Box textAlign="center" mb={4}>
         <Avatar
           src={user?.avatar ? `http://localhost:3001${user.avatar}` : undefined}
           sx={{ width: 80, height: 80, mx: 'auto', mb: 2 }}
         />
-
         <Typography variant="h4" mb={1}>
           Welcome, <span style={{ color: '#10B981' }}>{username}</span>
         </Typography>
@@ -158,7 +66,7 @@ function Profile() {
         </Typography>
       </Box>
 
-      {/* Centered Cards */}
+      {/* Cards */}
       <Grid container spacing={3} justifyContent="center">
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 3 }}>
@@ -176,26 +84,21 @@ function Profile() {
                   try {
                     const res = await fetch("http://localhost:3001/api/auth/request-reset", {
                       method: "POST",
-                      headers: {
-                        "Content-Type": "application/json"
-                      },
+                      headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ email: user.email })
                     });
 
-                    if (res.ok) {
-                      setResetMessage("📩 Password reset link sent to your email.");
-                    } else {
-                      const data = await res.json();
-                      setResetMessage("❌ " + (data.error || "Failed to send reset link."));
-                    }
-                  } catch (err) {
+                    const data = await res.json();
+                    setResetMessage(res.ok
+                      ? "📩 Password reset link sent to your email."
+                      : "❌ " + (data.error || "Failed to send reset link."));
+                  } catch {
                     setResetMessage("❌ Error sending request.");
                   }
                 }}
               >
                 Change your password
               </Button>
-
               {resetMessage && (
                 <Typography
                   ml={2}
@@ -206,7 +109,6 @@ function Profile() {
                 </Typography>
               )}
             </Box>
-
           </Paper>
         </Grid>
 
@@ -222,7 +124,6 @@ function Profile() {
             <Button variant="text" onClick={() => navigate("/personalize")}>
               Review personal information
             </Button>
-
           </Paper>
         </Grid>
 
@@ -242,8 +143,6 @@ function Profile() {
                 {googleBindError}
               </Typography>
             )}
-
-
             <Box display="flex" justifyContent="space-between" alignItems="center" gap={2}>
               {!isGoogleLinked ? (
                 <Button
@@ -259,7 +158,6 @@ function Profile() {
                       },
                       credentials: "include"
                     });
-
                     const data = await res.json();
                     if (res.ok && data.redirectUrl) {
                       window.location.href = `http://localhost:3001${data.redirectUrl}`;
@@ -278,9 +176,7 @@ function Profile() {
                     const token = localStorage.getItem("token");
                     const res = await fetch("http://localhost:3001/api/auth/google/unbind", {
                       method: "POST",
-                      headers: {
-                        Authorization: `Bearer ${token}`
-                      }
+                      headers: { Authorization: `Bearer ${token}` }
                     });
                     if (res.ok) {
                       setIsGoogleLinked(false);
@@ -293,7 +189,6 @@ function Profile() {
                   Unlink Google
                 </Button>
               )}
-
               <Box display="flex" gap={1}>
                 <Chip
                   icon={<GoogleIcon />}
@@ -307,19 +202,14 @@ function Profile() {
                   color={isGoogleLinked && user?.role === "manager" ? "success" : "warning"}
                   variant={isGoogleLinked && user?.role === "manager" ? "filled" : "outlined"}
                 />
-
               </Box>
             </Box>
-
-
-
           </Paper>
         </Grid>
       </Grid>
       <SortaBot />
     </MainLayout>
   );
-
 }
 
 export default Profile;
