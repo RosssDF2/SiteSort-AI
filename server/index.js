@@ -18,6 +18,7 @@ const chatRoutes = require("./routes/chatRoutes");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 const enquiryRoutes = require("./routes/EnquiryRoutes");
+const chatLogRoutes = require('./routes/chatLogs');
 
 // ✅ Middleware
 app.use(cors({
@@ -34,6 +35,7 @@ app.use('/api/files', fileRoutes);
 app.use("/api/budget", budgetRoutes);
 dotenv.config();
 app.use("/api/enquiry", enquiryRoutes);
+app.use('/api', chatLogRoutes);
 
 
 // ✅ Session & Passport
