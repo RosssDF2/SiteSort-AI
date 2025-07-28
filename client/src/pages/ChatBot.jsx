@@ -1,3 +1,4 @@
+// src/components/ChatBot.jsx
 import React, { useState, useContext, useEffect, useRef } from "react";
 import {
   Box,
@@ -23,12 +24,32 @@ import axios from "axios";
 function ChatBot() {
   const { user } = useContext(UserContext);
   const username = user?.username || user?.email?.split("@")[0] || "Guest";
+  const [uploading, setUploading] = useState(false);
 
   const [history, setHistory] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const scrollRef = useRef(null);
+
+  // 1) Load saved chats on mount
+  useEffect(() => {
+    axios.get("/api/chatlog")
+      .then(({ data }) => {
+        // data = array of { prompt, response, _id }
+        const loaded = data.map((c) => ({
+          title: c.prompt.slice(0, 20),
+          messages: [
+            { sender: "user", text: c.prompt },
+            { sender: "ai", text: c.response }
+          ]
+        }));
+        setHistory(loaded);
+      })
+      .catch((err) => {
+        console.error("Failed to load chat history:", err);
+      });
+  }, []);
 
   // Auto‑scroll on new messages
   useEffect(() => {
@@ -57,13 +78,27 @@ function ChatBot() {
     setInput("");
 
     try {
-      const { data } = await axios.post("http://localhost:3001/chat", { prompt: text });
+      // 2a) Send prompt to AI
+      const { data } = await axios.post(
+        "http://localhost:3001/chat",
+        { prompt: text },
+        { withCredentials: true }
+      );
       const aiMsg = { sender: "ai", text: data };
       const final = [...updated, aiMsg];
       setMessages(final);
 
-      // Update history
-      const title = updated[0]?.text?.slice(0, 20) || "New Chat";
+      // 2b) Persist Q&A to your chatlog endpoint
+      axios
+        .post(
+          "http://localhost:3001/api/chatlog",
+          { prompt: text, response: data },
+          { withCredentials: true }
+        )
+        .catch((err) => console.error("Failed to save chatlog:", err));
+
+      // Update sidebar history
+      const title = updated[0]?.text.slice(0, 20) || "New Chat";
       const newHist = [...history];
       if (activeIndex === null) {
         newHist.push({ title, messages: final });
@@ -73,15 +108,22 @@ function ChatBot() {
       }
       setHistory(newHist);
     } catch (err) {
-      console.error(err);
+      console.error("Chat error:", err);
     }
   };
 
   return (
     <ChatLayout>
       <Box display="flex" height="100vh" overflow="hidden">
-        {/* Sidebar / Chat history */}
-        <Box sx={{ width: 300, height: '80vh', overflowY: 'auto', borderRight: '1px solid #ddd' }}>
+        {/* Sidebar */}
+        <Box
+          sx={{
+            width: 300,
+            height: "80vh",
+            overflowY: "auto",
+            borderRight: "1px solid #ddd"
+          }}
+        >
           <ChatHistory
             history={history}
             activeIndex={activeIndex}
@@ -98,29 +140,33 @@ function ChatBot() {
           <Paper
             elevation={2}
             sx={{
-              height: '80vh',
-              display: 'flex',
-              flexDirection: 'column',
-              position: 'relative'
+              height: "80vh",
+              display: "flex",
+              flexDirection: "column",
+              position: "relative"
             }}
           >
-            {/* Scrollable Chat Box */}
+            {/* Messages */}
             <Box
               ref={scrollRef}
               sx={{
                 flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: messages.length === 0 ? 'center' : 'flex-start',
-                overflowY: 'auto',
-                bgcolor: '#fafafa'
+                display: "flex",
+                flexDirection: "column",
+                justifyContent:
+                  messages.length === 0 ? "center" : "flex-start",
+                overflowY: "auto",
+                bgcolor: "#fafafa"
               }}
             >
-              <Container maxWidth="sm" sx={{ py: 3, maxWidth: 650 }}>
+              <Container
+                maxWidth="sm"
+                sx={{ py: 3, maxWidth: 650 }}
+              >
                 <Typography
                   variant="h4"
                   gutterBottom
-                  sx={{ color: '#10B981', textAlign: 'center' }}
+                  sx={{ color: "#10B981", textAlign: "center" }}
                 >
                   Chat with SiteSort AI
                 </Typography>
@@ -130,7 +176,7 @@ function ChatBot() {
                     <Typography
                       variant="body1"
                       color="textSecondary"
-                      sx={{ textAlign: 'center', mb: 2 }}
+                      sx={{ textAlign: "center", mb: 2 }}
                     >
                       Ask anything about your documents or projects.
                     </Typography>
@@ -147,7 +193,11 @@ function ChatBot() {
                           variant="outlined"
                           startIcon={qp.icon}
                           onClick={() => sendMessage(qp.label)}
-                          sx={{ color: '#10B981', borderColor: '#10B981', mb: 1 }}
+                          sx={{
+                            color: "#10B981",
+                            borderColor: "#10B981",
+                            mb: 1
+                          }}
                         >
                           {qp.label}
                         </Button>
@@ -160,16 +210,18 @@ function ChatBot() {
                   <Box
                     key={idx}
                     sx={{
-                      display: 'flex',
-                      justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                      display: "flex",
+                      justifyContent:
+                        msg.sender === "user" ? "flex-end" : "flex-start",
                       mb: 1
                     }}
                   >
                     <Paper
                       sx={{
                         p: 1.5,
-                        maxWidth: '75%',
-                        bgcolor: msg.sender === 'user' ? '#e0f7fa' : '#ffffff'
+                        maxWidth: "75%",
+                        bgcolor:
+                          msg.sender === "user" ? "#e0f7fa" : "#ffffff"
                       }}
                     >
                       <Typography>{msg.text}</Typography>
@@ -179,26 +231,85 @@ function ChatBot() {
               </Container>
             </Box>
 
-            {/* Slightly Wider Floating Input */}
-            <Box sx={{ position: 'absolute', bottom: 16, width: '100%' }}>
+            {/* Floating Input */}
+            <Box sx={{ position: "absolute", bottom: 16, width: "100%" }}>
               <Container maxWidth="sm" sx={{ maxWidth: 650 }}>
-                <Paper sx={{ display: 'flex', alignItems: 'center', p: 1, borderRadius: 4 }}>
+                <Paper
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    p: 1,
+                    borderRadius: 4
+                  }}
+                >
                   <TextField
                     fullWidth
                     placeholder="Type a message..."
                     variant="standard"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && sendMessage(input)
+                    }
                     InputProps={{ disableUnderline: true }}
                   />
                   <IconButton component="label">
                     <AttachFileIcon />
-                    <input hidden type="file" />
+                    <input
+                      hidden
+                      type="file"
+                      accept=".pdf,.doc,.docx,.txt"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        const formData = new FormData();
+                        formData.append("file", file);
+
+                        setUploading(true);
+                        try {
+                          const { data } = await axios.post(
+                            "http://localhost:3001/api/chat/upload-summarize",
+                            formData,
+                            { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
+                          );
+
+                          const userFileMsg = { sender: "user", text: `📎 Uploaded file: ${file.name}` };
+                          const aiReplyMsg = { sender: "ai", text: data.summary };
+
+                          const updated = [...messages, userFileMsg, aiReplyMsg];
+                          setMessages(updated);
+
+                          // Save to chatlog if you want
+                          await axios.post(
+                            "http://localhost:3001/api/chatlog",
+                            { prompt: `📎 Uploaded file: ${file.name}`, response: data.summary },
+                            { withCredentials: true }
+                          );
+
+                          // Update sidebar history
+                          const title = updated[0]?.text.slice(0, 20) || "File Upload";
+                          const newHist = [...history];
+                          if (activeIndex === null) {
+                            newHist.push({ title, messages: updated });
+                            setActiveIndex(newHist.length - 1);
+                          } else {
+                            newHist[activeIndex] = { title, messages: updated };
+                          }
+                          setHistory(newHist);
+
+                        } catch (err) {
+                          console.error("Upload error:", err);
+                        } finally {
+                          setUploading(false);
+                        }
+                      }}
+
+                    />
                   </IconButton>
                   <IconButton
                     onClick={() => sendMessage(input)}
-                    sx={{ ml: 1, bgcolor: '#10B981', color: '#fff' }}
+                    sx={{ ml: 1, bgcolor: "#10B981", color: "#fff" }}
                   >
                     <SendIcon />
                   </IconButton>

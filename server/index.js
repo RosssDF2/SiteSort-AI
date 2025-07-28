@@ -100,6 +100,8 @@ async function listDriveFiles() {
 app.use("/avatars", express.static("public/avatars"));
 app.use("/api/logs", logRoutes);
 app.use("/", chatRoutes);
+app.use("/api/chat", chatRoutes);    // ✅ for file upload: /api/chat/upload-summarize
+
 app.use(bodyParser.json());
 
 

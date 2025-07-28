@@ -1,10 +1,39 @@
 const { google } = require("googleapis");
 const path = require("path");
+const { summarizeDocumentBuffer } = require("../utils/vertexGemini");
+const { extractTextFromPDF } = require("../utils/pdfParser");
 
 const auth = new google.auth.GoogleAuth({
     keyFile: path.join(__dirname, "../dark-stratum-465506-u8-6a66584f85aa.json"),
     scopes: ["https://www.googleapis.com/auth/drive"],
 });
+
+
+exports.summarizeUpload = async (req, res) => {
+    try {
+        const file = req.file;
+        if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+        let content = "";
+
+        if (file.mimetype === "application/pdf") {
+            content = await extractTextFromPDF(file.buffer); // ✅ from pdf-parse
+        } else {
+            content = file.buffer.toString("utf8");
+        }
+
+        if (!content.trim()) {
+            return res.status(400).json({ error: "Empty or unreadable file content" });
+        }
+
+        const summary = await summarizeDocumentBuffer(content, file.originalname); // ✅ now passes plain text
+        res.json({ summary });
+
+    } catch (err) {
+        console.error("Summary error:", err.message);
+        res.status(500).json({ error: "Failed to summarize file" });
+    }
+};
 
 exports.getFilesByProject = async (req, res) => {
     const projectName = req.query.project;

@@ -62,7 +62,7 @@ function extractRelevantContext(prompt, context) {
     return context; // fallback to full
 }
 
-// 🌟 Ask Gemini
+// 🌟 Ask Gemini (main chatbot use)
 async function askGemini(prompt) {
     if (!prompt || prompt.trim().length < 2) {
         return {
@@ -79,7 +79,6 @@ async function askGemini(prompt) {
         };
     }
 
-    // Load knowledge and trim context
     let context = "";
     try {
         const knowledgePath = path.resolve(__dirname, "../sorta_knowledge.txt");
@@ -111,16 +110,12 @@ async function askGemini(prompt) {
 
         let reply = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "❌ No response";
 
-        // 🧽 Strip unwanted intro if Gemini still misbehaves
-        // Remove any redundant greeting at the start
         reply = reply.replace(/^(hi|hello|hey|greetings)[.! ]*[\s\n-]*/i, "").trim();
-
-        // Remove "I am Sorta..." intros
-
         reply = reply.replace(/^i'?m (sorta|an ai assistant)[\s\S]*?(?=\n|\.|:)/i, "").trim();
         if (reply.length < 20 || /^[a-z]/.test(reply)) {
             reply = `I'm Sorta — your helpful AI assistant built into the SiteSort platform. Ask me anything about uploading, searching, or dashboard insights!`;
         }
+
         tokenUsageToday += estimateTokens(reply) + estimated;
 
         return {
@@ -136,7 +131,7 @@ async function askGemini(prompt) {
     }
 }
 
-
+// 🧾 Budget JSON generator
 async function generateBudgetJSON(prompt) {
     try {
         const result = await model.generateContent({
@@ -151,8 +146,44 @@ async function generateBudgetJSON(prompt) {
     }
 }
 
+/**
+ * Summarizes plain text extracted from PDF or text files.
+ * @param {string} extractedText - Cleaned, readable text content
+ * @param {string} filename - Original filename for context
+ */
+async function summarizeDocumentBuffer(extractedText, filename) {
+    try {
+        const prompt = `
+You're a helpful assistant that reads internal project documents like budgets and reports.
+
+Summarize the document titled "${filename}" in a **short, clear, and bullet-point format**, as if you're updating a project manager.
+
+Focus only on:
+- Budget figures
+- Key observations
+- Action items (if any)
+
+Be concise and skip generic intros. Just give the important points.
+
+Document:
+${extractedText}
+        `.trim();
+
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+
+        const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text;
+        return text || "No summary available.";
+    } catch (err) {
+        console.error("❌ Gemini summarization error:", err.message);
+        return "❌ Failed to summarize file.";
+    }
+}
+
+
 module.exports = {
     askGemini,
-    generateBudgetJSON, // 👈 Add this
+    generateBudgetJSON,
+    summarizeDocumentBuffer,
 };
-

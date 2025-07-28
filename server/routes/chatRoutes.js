@@ -1,10 +1,18 @@
 const express = require("express");
 const dotenv = require("dotenv");
+
 const axios = require("axios");
+const multer = require("multer");
+const upload = multer({ storage: multer.memoryStorage() }); // or diskStorage if preferred
+const { summarizeUpload } = require("../controllers/fileController");
 
 dotenv.config();
 const router = express.Router();
 
+router.post("/upload-summarize", upload.single("file"), (req, res, next) => {
+  console.log("📥 File received:", req.file?.originalname);
+  next();
+}, summarizeUpload);
 router.post("/chat", async (req, res) => {
   const { prompt } = req.body;
 
@@ -19,7 +27,7 @@ router.post("/chat", async (req, res) => {
     const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
-        model: "openai/gpt-4o", 
+        model: "openai/gpt-4o",
         messages: [{ role: "user", content: prompt }],
         temperature: 1,
         max_tokens: 256,
