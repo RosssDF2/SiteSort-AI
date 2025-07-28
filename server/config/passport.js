@@ -18,6 +18,8 @@ passport.use("google-bind", new GoogleStrategy({
     user.googleId = profile.id;
     user.isGoogleLinked = true;
     user.googleEmail = profile.emails[0].value;
+    user.googleAccessToken = accessToken; // ✅ Save this to DB
+
     await user.save();
 
     return done(null, user);
