@@ -19,14 +19,12 @@ const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 const enquiryRoutes = require("./routes/EnquiryRoutes");
 const chatLogRoutes = require('./routes/chatLogs');
-const uploadRoutes = require("./routes/uploadRoutes");
 
 // ✅ Middleware
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true
 }));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static("public"));
@@ -38,7 +36,6 @@ app.use("/api/budget", budgetRoutes);
 dotenv.config();
 app.use("/api/enquiry", enquiryRoutes);
 app.use('/api', chatLogRoutes);
-app.use("/api/upload", uploadRoutes);
 
 
 // ✅ Session & Passport
