@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
+  googleAccessToken: { type: String }, // ✅ Add this if not already
+
   email: {
     type: String,
     required: true,
