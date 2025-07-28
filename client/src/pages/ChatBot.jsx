@@ -1,4 +1,3 @@
-// src/pages/ChatBot.jsx
 import React, { useState, useContext } from "react";
 import {
   Box,
@@ -9,16 +8,20 @@ import {
   Button,
   List,
   ListItem,
-  ListItemText
+  ListItemText,
+  IconButton
 } from "@mui/material";
 import { UserContext } from "../contexts/UserContext";
-import ChatLayout from "../layouts/ChatLayout"; // ✅ use ChatLayout here
+import ChatLayout from "../layouts/ChatLayout";
 import axios from "axios";
 import ChatHistory from "../components/ChatHistory";
+import SendIcon from "@mui/icons-material/Send";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
 
 function ChatBot() {
   const { user } = useContext(UserContext);
   const username = user?.username || user?.email?.split("@")[0] || "John Doe";
+
   const [chatHistory, setChatHistory] = useState([]);
   const [activeChat, setActiveChat] = useState(0);
 
@@ -26,6 +29,20 @@ function ChatBot() {
   const [messages, setMessages] = useState([
     { sender: "zara", text: "Hi there! I'm ZARA. How can I help with your files today?" }
   ]);
+
+  const handleNewChat = () => {
+    const newChat = {
+      title: "New Chat",
+      messages: [
+        { sender: "zara", text: "Hi there! I'm ZARA. How can I help with your files today?" }
+      ]
+    };
+
+    const updatedHistory = [...chatHistory, newChat];
+    setChatHistory(updatedHistory);
+    setMessages(newChat.messages);
+    setActiveChat(updatedHistory.length - 1);
+  };
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -46,27 +63,28 @@ function ChatBot() {
 
       // Save to chat history
       const updatedHistory = [...chatHistory];
-      updatedHistory[activeChat] = { title: updated[1]?.text?.slice(0, 20) || "Chat", messages: updated };
+      updatedHistory[activeChat] = {
+        title: updated[1]?.text?.slice(0, 20) || "Chat",
+        messages: updated
+      };
       setChatHistory(updatedHistory);
     } catch (error) {
       console.error("❌ Error:", error);
     }
   };
 
-
   return (
     <ChatLayout>
       <Box display="flex">
-        {/* Chat History Sidebar */}
         <ChatHistory
           history={chatHistory}
           onSelect={(index) => {
             setMessages(chatHistory[index].messages);
             setActiveChat(index);
           }}
+          onNewChat={handleNewChat}
         />
 
-        {/* Main Chat UI */}
         <Box flex={1} px={4} py={2}>
           <Box textAlign="center" mb={4}>
             <Avatar
@@ -98,7 +116,7 @@ function ChatBot() {
               ))}
             </List>
 
-            <Box display="flex" gap={1}>
+            <Box display="flex" gap={1} alignItems="center">
               <TextField
                 fullWidth
                 variant="outlined"
@@ -107,16 +125,33 @@ function ChatBot() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
               />
-              <Button variant="contained" onClick={handleSend}>
-                Send
-              </Button>
+
+              <IconButton component="label" sx={{ bgcolor: "#f0f0f0", borderRadius: 2 }}>
+                <AttachFileIcon />
+                <input
+                  type="file"
+                  hidden
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      console.log("Selected file:", file.name); // For UI testing
+                    }
+                  }}
+                />
+              </IconButton>
+
+              <IconButton
+                onClick={handleSend}
+                sx={{ bgcolor: "#10B981", color: "white", borderRadius: 2 }}
+              >
+                <SendIcon />
+              </IconButton>
             </Box>
           </Paper>
         </Box>
       </Box>
     </ChatLayout>
   );
-
 }
 
 export default ChatBot;

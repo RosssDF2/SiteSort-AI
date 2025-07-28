@@ -1,42 +1,220 @@
-import React, { useEffect, useState, useContext } from "react";
-import axios from "axios";
-import { Box, Typography, Paper } from "@mui/material";
-import { UserContext } from "../contexts/UserContext";
+import React, { useState } from "react";
+import {
+  Box,
+  Button,
+  TextField,
+  List,
+  ListItem,
+  IconButton,
+  Typography,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Menu,
+  MenuItem
+} from "@mui/material";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import AddIcon from "@mui/icons-material/Add";
 
-const ChatHistory = () => {
-  const [messages, setMessages] = useState([]);
-  const { user } = useContext(UserContext);
+function ChatHistory({ history, onSelect, onNewChat }) {
+  const [search, setSearch] = useState("");
+  const [editIndex, setEditIndex] = useState(null);
+  const [editText, setEditText] = useState("");
+  const [confirmDeleteIndex, setConfirmDeleteIndex] = useState(null);
+  const [menuAnchor, setMenuAnchor] = useState(null);
+  const [menuIndex, setMenuIndex] = useState(null);
 
-  useEffect(() => {
-    const fetchChats = async () => {
-      try {
-        const res = await axios.get("/api/chatlog", {
-          headers: { Authorization: `Bearer ${user.token}` }
-        });
-        setMessages(res.data);
-      } catch (err) {
-        console.error("Failed to fetch chat logs", err);
-      }
-    };
-    fetchChats();
-  }, []);
+  const filteredHistory = history.filter((chat) =>
+    chat.title.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleMenuOpen = (event, index) => {
+    setMenuAnchor(event.currentTarget);
+    setMenuIndex(index);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
+    setMenuIndex(null);
+  };
+
+  const handleEdit = () => {
+    const chat = history[menuIndex];
+    setEditIndex(menuIndex);
+    setEditText(chat.title);
+    handleMenuClose();
+  };
+
+  const confirmEdit = () => {
+    if (editText.trim()) {
+      history[editIndex].title = editText;
+      onSelect(editIndex);
+    }
+    setEditIndex(null);
+  };
+
+  const handleDelete = () => {
+    setConfirmDeleteIndex(menuIndex);
+    handleMenuClose();
+  };
+
+  const confirmDelete = () => {
+    history.splice(confirmDeleteIndex, 1);
+    setConfirmDeleteIndex(null);
+    if (history.length > 0) onSelect(0);
+  };
+
+  const handleClearAll = () => {
+    history.splice(0, history.length);
+    onSelect(0);
+  };
 
   return (
-    <Box p={3}>
-      <Typography variant="h5" gutterBottom>🗨️ Chat History</Typography>
-      {messages.map((msg, idx) => (
-        <Box key={idx} mb={2}>
-          <Paper elevation={3} sx={{ p: 2, background: "#f3f3f3" }}>
-            <Typography variant="body2" color="textSecondary">{new Date(msg.timestamp).toLocaleString()}</Typography>
-            <Typography variant="subtitle2" sx={{ mt: 1 }}>🧑‍💼 You:</Typography>
-            <Typography>{msg.prompt}</Typography>
-            <Typography variant="subtitle2" sx={{ mt: 2 }}>🤖 Sorta:</Typography>
-            <Typography>{msg.response}</Typography>
-          </Paper>
-        </Box>
-      ))}
+    <Box
+      width={280}
+      height="100vh"
+      bgcolor="#f8f9fa"
+      p={2}
+      display="flex"
+      flexDirection="column"
+    >
+      <Button
+        variant="contained"
+        startIcon={<AddIcon />}
+        onClick={onNewChat}
+        sx={{
+          mb: 2,
+          textTransform: "none",
+          bgcolor: "#10B981",
+          '&:hover': { bgcolor: "#0e9b74" }
+        }}
+      >
+        New Chat
+      </Button>
+
+      <TextField
+        placeholder="Search chats"
+        size="small"
+        fullWidth
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        sx={{ mb: 3 }}
+      />
+
+      <Divider sx={{ mb: 2 }} />
+      <Typography
+        variant="subtitle1"
+        sx={{ mb: 1, color: "text.secondary", fontWeight: 500 }}
+      >
+        Chats
+      </Typography>
+
+      <Box flexGrow={1} overflow="auto">
+        <List dense>
+          {filteredHistory.map((chat, index) => (
+            <ListItem
+              key={index}
+              sx={{
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 1,
+                bgcolor: "#fff",
+                borderRadius: 1,
+                boxShadow: 1,
+                px: 1
+              }}
+              onClick={() => onSelect(index)}
+            >
+              <Typography
+                variant="body2"
+                sx={{ flex: 1, cursor: "pointer" }}
+                noWrap
+              >
+                {chat.title}
+              </Typography>
+
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMenuOpen(e, index);
+                }}
+              >
+                <MoreVertIcon fontSize="small" />
+              </IconButton>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+
+      <Divider sx={{ my: 2 }} />
+      <Button
+        variant="text"
+        color="error"
+        onClick={handleClearAll}
+        sx={{ textTransform: "none" }}
+      >
+        Clear conversations
+      </Button>
+
+      <Menu
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleEdit}>Edit</MenuItem>
+        <MenuItem onClick={handleDelete}>Delete</MenuItem>
+      </Menu>
+
+      <Dialog open={editIndex !== null} onClose={() => setEditIndex(null)}>
+        <DialogTitle>Edit Chat Title</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditIndex(null)} sx={{color: "#10B981"}}>Cancel</Button>
+          <Button
+            onClick={confirmEdit}
+            variant="contained"
+            sx={{
+              bgcolor: "#10B981",
+              color: "#fff",
+              "&:hover": { bgcolor: "#0e9b74" }
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={confirmDeleteIndex !== null}
+        onClose={() => setConfirmDeleteIndex(null)}
+      >
+        <DialogTitle>Delete Chat?</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this chat?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDeleteIndex(null)} sx={{color: "#10B981"}}>Cancel</Button>
+          <Button
+            onClick={confirmDelete}
+            color="error"
+            variant="contained"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
-};
+}
 
 export default ChatHistory;
