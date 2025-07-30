@@ -33,21 +33,10 @@ router.post("/bind/initiate", (req, res) => {
 });
 
 // ✅ Step 1: Start Google OAuth
-router.get("/google/bind", (req, res, next) => {
-  if (!req.session.tempUserId) {
-    return res.status(401).json({ error: "Session expired or not authorized." });
-  }
+router.get("/google/bind",
+  passport.authenticate("google-bind") // this now uses the scope from your passport.js
+);
 
-  passport.authenticate("google-bind", {
-    scope: [
-      "profile",
-      "email",
-      "https://www.googleapis.com/auth/drive.metadata.readonly"  // ✅ Add this
-    ],
-    accessType: "offline", // ✅ Optional: to get refresh token
-    prompt: "consent"       // ✅ Optional: force account selection & consent
-  })(req, res, next);
-});
 
 
 // ✅ Step 2: Google OAuth Callback

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   Box, Typography, Button, Grid, Paper, Chip, TextField, IconButton,
-  FormControl, InputLabel, Select, MenuItem, CircularProgress
+  CircularProgress
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import EditIcon from "@mui/icons-material/Edit";
@@ -9,6 +9,71 @@ import DeleteIcon from "@mui/icons-material/Close";
 import MainLayout from "../layouts/MainLayout";
 import SortaBot from "../components/SortaBot";
 import axios from "axios";
+
+function FolderSelector({ onSelect }) {
+  const [levels, setLevels] = useState([[]]);
+  const [hoveredPath, setHoveredPath] = useState([]);
+  const [selectedFolder, setSelectedFolder] = useState(null);
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    fetchFolders(null, 0);
+  }, []);
+
+  const fetchFolders = async (parentId, level) => {
+    try {
+      const url = parentId
+        ? `http://localhost:3001/api/drive/folders-oauth?parentId=${parentId}`
+        : `http://localhost:3001/api/drive/folders-oauth`;
+
+      const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const newLevels = [...levels.slice(0, level), res.data.folders || []];
+      setLevels(newLevels);
+    } catch (err) {
+      console.error("❌ Folder fetch failed:", err.message);
+    }
+  };
+
+  const handleHover = (folder, level) => {
+    const path = [...hoveredPath.slice(0, level), folder.id];
+    setHoveredPath(path);
+    fetchFolders(folder.id, level + 1);
+  };
+
+  const handleSelect = (folder) => {
+    setSelectedFolder(folder);
+    onSelect(folder.id);
+  };
+
+  return (
+    <Box display="flex" gap={2} mt={2}>
+      {levels.map((folders, level) => (
+        <Box key={level} minWidth={200}>
+          <Paper elevation={2} sx={{ p: 1 }}>
+            {folders.map((folder) => (
+              <Box
+                key={folder.id}
+                onMouseEnter={() => handleHover(folder, level)}
+                onClick={() => handleSelect(folder)}
+                sx={{
+                  p: 1,
+                  cursor: "pointer",
+                  backgroundColor: selectedFolder?.id === folder.id ? "#DCFCE7" : "transparent",
+                  "&:hover": { backgroundColor: "#ECFDF5" },
+                }}
+              >
+                {folder.name}
+              </Box>
+            ))}
+          </Paper>
+        </Box>
+      ))}
+    </Box>
+  );
+}
 
 function Upload() {
   const [step, setStep] = useState("initial");
@@ -19,7 +84,6 @@ function Upload() {
   const [newTag, setNewTag] = useState("");
   const [suggestedFolder, setSuggestedFolder] = useState("General");
   const [manualFolder, setManualFolder] = useState("");
-  const [availableFolders, setAvailableFolders] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {
@@ -70,21 +134,13 @@ function Upload() {
     const token = localStorage.getItem("token");
     const formData = new FormData();
     formData.append("file", selectedFile);
+    formData.append("folderId", manualFolder);
+    formData.append("originalName", selectedFile.name);
 
-    const matchedFolder = availableFolders.find(
-      (f) => f.name.toLowerCase() === suggestedFolder.toLowerCase()
-    );
-
-    const finalFolderId = manualFolder || matchedFolder?.id;
-
-    if (!finalFolderId) {
-      console.error("❌ No folder matched. Manual:", manualFolder, "Suggested:", suggestedFolder);
-      alert("❌ Cannot determine folder to upload. Please select one manually.");
+    if (!manualFolder) {
+      alert("❌ Please select a folder.");
       return;
     }
-
-    formData.append("folderId", finalFolderId);
-    formData.append("originalName", selectedFile.name);
 
     try {
       const res = await axios.post("http://localhost:3001/api/upload/confirm", formData, {
@@ -104,29 +160,6 @@ function Upload() {
       alert("❌ Confirm upload failed.");
     }
   };
-
-
-  useEffect(() => {
-    const fetchFolders = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:3001/api/drive/folders-oauth", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          },
-          withCredentials: true, // just in case your backend uses session checks
-        });
-        setAvailableFolders(res.data.folders);
-      } catch (err) {
-        console.error("❌ Failed to fetch folders:", err.response?.data || err.message);
-        alert("❌ Failed to fetch Google Drive folders. Make sure your Google is linked.");
-      }
-    };
-
-    fetchFolders();
-  }, []);
-
-
 
   return (
     <MainLayout>
@@ -171,28 +204,6 @@ function Upload() {
               onClick={handleUpload}
             >
               Upload
-            </Button>
-            <Button
-              variant="outlined"
-              sx={{
-                m: 1,
-                borderColor: '#10B981',
-                color: '#10B981',
-                '&:hover': { backgroundColor: '#f0fdf4', borderColor: '#10B981' },
-              }}
-            >
-              Import from Google Drive
-            </Button>
-            <Button
-              variant="outlined"
-              sx={{
-                m: 1,
-                borderColor: '#10B981',
-                color: '#10B981',
-                '&:hover': { backgroundColor: '#f0fdf4', borderColor: '#10B981' },
-              }}
-            >
-              View stored files
             </Button>
           </Box>
 
@@ -253,21 +264,8 @@ function Upload() {
               <Paper sx={{ p: 4, borderRadius: 3 }}>
                 <Typography variant="h6">Folder Recommendation</Typography>
                 <Typography mb={2}>Suggested by AI: <strong>{suggestedFolder}</strong></Typography>
-                <FormControl fullWidth>
-                  <InputLabel>Change folder</InputLabel>
-                  <Select
-                    value={manualFolder}
-                    onChange={(e) => setManualFolder(e.target.value)}
-                    label="Change folder"
-                  >
-                    <MenuItem value="">Use AI Suggested</MenuItem>
-                    {availableFolders.map((folder) => (
-                      <MenuItem key={folder.id} value={folder.id}>
-                        {folder.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Typography variant="subtitle1">Select Upload Folder</Typography>
+                <FolderSelector onSelect={(folderId) => setManualFolder(folderId)} />
 
                 <Box mt={4} textAlign="right">
                   <Button

@@ -24,6 +24,7 @@ const sortaRoute = require("./routes/sorta");
 const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/admin");
 const driveRoutes = require("./routes/driveRoutes");
+const debugRoutes = require("./routes/debugRoutes");
 
 // 🆕 You will re-add /api/drive once your OAuth drive route is implemented
 
@@ -65,6 +66,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api", chatLogRoutes); // fallback route for other chat logs
 // ❌ Removed: app.use("/api/drive", driveRoutes);
 app.use("/api/drive", driveRoutes);
+app.use("/api", debugRoutes);
 
 // ✅ Default route
 app.get("/", (req, res) => {
