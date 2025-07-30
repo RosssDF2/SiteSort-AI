@@ -115,7 +115,13 @@ async function askGemini(prompt) {
         if (reply.length < 20 || /^[a-z]/.test(reply)) {
             reply = `I'm Sorta — your helpful AI assistant built into the SiteSort platform. Ask me anything about uploading, searching, or dashboard insights!`;
         }
-
+        let imageHint = null;
+        if (/upload/i.test(prompt)) {
+            imageHint = "/images/sorta-help/upload-guide.png";
+        }
+        if (imageHint) {
+            reply += `\n\n🖼️ Here's a visual guide:\n![Upload Guide](${imageHint})`;
+        }
         tokenUsageToday += estimateTokens(reply) + estimated;
 
         return {

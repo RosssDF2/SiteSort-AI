@@ -1,5 +1,5 @@
 // src/components/SortaBot.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box, Paper, Button, Typography, TextField, IconButton
 } from '@mui/material';
@@ -11,6 +11,8 @@ function SortaBot() {
     const [open, setOpen] = useState(false);
     const [chatInput, setChatInput] = useState('');
     const [chatLog, setChatLog] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [dotCount, setDotCount] = useState(0);
 
     const handleSend = async () => {
         if (!chatInput.trim()) return;
@@ -18,21 +20,35 @@ function SortaBot() {
         const userMessage = { from: 'user', text: chatInput };
         setChatLog((prev) => [...prev, userMessage]);
         setChatInput('');
+        setLoading(true); // ✅ START LOADING
 
         try {
             const res = await http.post('/sorta/chat', {
                 message: chatInput
             });
             const botReply = { from: 'sorta', text: res.data.reply };
-
             setChatLog((prev) => [...prev, botReply]);
         } catch (err) {
             console.error("Sorta API error:", err);
             const botReply = { from: 'sorta', text: "Oops! I had trouble reaching my brain 🧠. Try again later." };
             setChatLog((prev) => [...prev, botReply]);
+        } finally {
+            setLoading(false); // ✅ END LOADING
         }
     };
 
+    useEffect(() => {
+        if (!loading) {
+            setDotCount(0);
+            return;
+        }
+
+        const interval = setInterval(() => {
+            setDotCount((prev) => (prev + 1) % 4); // loops from 0 to 3
+        }, 400);
+
+        return () => clearInterval(interval);
+    }, [loading]);
 
 
     return (
@@ -74,10 +90,61 @@ function SortaBot() {
                                         color: msg.from === 'user' ? 'white' : 'black',
                                         borderRadius: 2,
                                     }}>
-                                        <Typography variant="body2">{msg.text}</Typography>
+                                        <Typography variant="body2">
+                                            {msg.text.split('\n').map((line, idx) => {
+                                                // Match markdown image format
+                                                const match = line.match(/!\[(.*?)\]\((.*?)\)/);
+                                                if (match) {
+                                                    const alt = match[1];
+                                                    const url = match[2];
+                                                    return (
+                                                        <Box key={idx} mt={1}>
+                                                            <img
+                                                                src={url}
+                                                                alt={alt}
+                                                                style={{
+                                                                    width: '100%',
+                                                                    maxWidth: '200px',         // 🧠 Limits actual size
+                                                                    borderRadius: 8,
+                                                                    border: '1px solid #ccc',
+                                                                    display: 'block',
+                                                                    marginTop: 8
+                                                                }}
+                                                            />
+
+                                                        </Box>
+                                                    );
+                                                }
+                                                return <div key={idx}>{line}</div>;
+                                            })}
+                                        </Typography>
                                     </Paper>
                                 </Box>
+
                             ))}
+
+                            {loading && (
+                                <Box textAlign="left" mb={1}>
+                                    <Paper
+                                        sx={{
+                                            display: 'inline-block',
+                                            px: 1.5,
+                                            py: 1,
+                                            bgcolor: '#E5E7EB',
+                                            color: 'black',
+                                            borderRadius: 2,
+                                            fontStyle: 'italic',
+                                            opacity: 0.8
+                                        }}
+                                    >
+                                        <Typography variant="body2">
+                                            Sorta is typing{".".repeat(dotCount)}
+                                        </Typography>
+                                    </Paper>
+                                </Box>
+                            )}
+
+
                         </Box>
 
                         <Box display="flex" gap={1}>
