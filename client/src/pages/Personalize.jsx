@@ -98,38 +98,7 @@ function Personalize() {
     return (
         <MainLayout>
             {/* TOP RIGHT ICONS */}
-            <Box display="flex" justifyContent="flex-end" alignItems="center" gap={2} mb={2}>
-                <IconButton><HelpOutlineIcon /></IconButton>
-                <IconButton><AppsIcon /></IconButton>
-                <IconButton><SettingsIcon /></IconButton>
-                <IconButton onClick={handleClick}><AccountCircleIcon /></IconButton>
-
-                <Menu
-                    anchorEl={anchorEl}
-                    open={open}
-                    onClose={handleClose}
-                    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                >
-                    <Box px={2} py={1}>
-                        <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
-                        <Typography variant="subtitle1">
-                            Hi, <span style={{ color: "#10B981" }}>{user?.username || user?.email?.split('@')[0]}</span>
-                        </Typography>
-                    </Box>
-                    <Divider />
-                    <MenuItem onClick={() => navigate("/logs")}>
-                        <HistoryIcon sx={{ fontSize: 18, color: "text.secondary", mr: 1 }} />
-                        View Logs
-                    </MenuItem>
-
-
-                    <Box px={2} py={1}>
-                        <Button variant="outlined" color="error" fullWidth onClick={handleLogout}>
-                            Sign out
-                        </Button>
-                    </Box>
-                </Menu>
-            </Box>
+            
 
             {/* ENTIRE PERSONALIZE CONTENT AREA */}
             <Box sx={{ maxWidth: 800, mx: "auto", px: { xs: 2, md: 0 } }}>

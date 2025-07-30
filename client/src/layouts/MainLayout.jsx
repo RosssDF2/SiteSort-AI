@@ -147,7 +147,6 @@ function MainLayout({ children }) {
             </Box>
           </Menu>
 
-          <IconButton><SettingsIcon /></IconButton>
           <IconButton onClick={handleAccountClick}><AccountCircleIcon /></IconButton>
 
           <Menu

@@ -74,9 +74,11 @@ function Upload() {
     const matchedFolder = availableFolders.find(
       (f) => f.name.toLowerCase() === suggestedFolder.toLowerCase()
     );
+
     const finalFolderId = manualFolder || matchedFolder?.id;
 
     if (!finalFolderId) {
+      console.error("❌ No folder matched. Manual:", manualFolder, "Suggested:", suggestedFolder);
       alert("❌ Cannot determine folder to upload. Please select one manually.");
       return;
     }
@@ -103,15 +105,28 @@ function Upload() {
     }
   };
 
+
   useEffect(() => {
-    axios.get("http://localhost:3001/api/drive/folders", {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-    }).then(res => {
-      setAvailableFolders(res.data.folders); // [{ id, name }]
-    }).catch(err => {
-      console.error("Failed to fetch folders", err);
-    });
+    const fetchFolders = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:3001/api/drive/folders-oauth", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          withCredentials: true, // just in case your backend uses session checks
+        });
+        setAvailableFolders(res.data.folders);
+      } catch (err) {
+        console.error("❌ Failed to fetch folders:", err.response?.data || err.message);
+        alert("❌ Failed to fetch Google Drive folders. Make sure your Google is linked.");
+      }
+    };
+
+    fetchFolders();
   }, []);
+
+
 
   return (
     <MainLayout>

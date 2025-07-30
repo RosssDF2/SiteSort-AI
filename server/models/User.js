@@ -75,7 +75,17 @@ const userSchema = new mongoose.Schema({
   twoFASecret: {
     type: String,
     default: null // Store TOTP secret here if using Google Authenticator
-  }
+  },
+
+  googleAccessToken: {
+    type: String,
+    default: null,
+  },
+  googleRefreshToken: {
+    type: String,
+    default: null,
+  },
+
 }, { timestamps: true });
 
 

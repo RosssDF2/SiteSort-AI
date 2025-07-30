@@ -5,20 +5,27 @@ const mongoose = require("mongoose");
 const session = require("express-session");
 const passport = require("passport");
 const path = require("path");
-const { google } = require("googleapis");
+
+const app = express();
+const port = process.env.APP_PORT || 3001;
+
+// ✅ Route imports
 const logRoutes = require("./routes/logs");
 const insightRoutes = require("./routes/insightRoutes");
 const dashboard = require("./routes/dashboard");
-const app = express();
-const port = process.env.APP_PORT || 3001;
 const projectRoutes = require('./routes/projectRoutes');
 const fileRoutes = require('./routes/fileRoutes');
 const budgetRoutes = require("./routes/budgetRoutes");
 const chatRoutes = require("./routes/chatRoutes");
-const bodyParser = require("body-parser");
-const dotenv = require("dotenv");
 const enquiryRoutes = require("./routes/EnquiryRoutes");
 const chatLogRoutes = require('./routes/chatLogs');
+const uploadRoutes = require("./routes/uploadRoutes");
+const sortaRoute = require("./routes/sorta");
+const authRoutes = require("./routes/auth");
+const adminRoutes = require("./routes/admin");
+const driveRoutes = require("./routes/driveRoutes");
+
+// 🆕 You will re-add /api/drive once your OAuth drive route is implemented
 
 // ✅ Middleware
 app.use(cors({
@@ -28,17 +35,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static("public"));
-app.use("/api/insights", insightRoutes);
-app.use("/api/dashboard", dashboard);
-app.use('/api/projects', projectRoutes);
-app.use('/api/files', fileRoutes);
-app.use("/api/budget", budgetRoutes);
-dotenv.config();
-app.use("/api/enquiry", enquiryRoutes);
-app.use('/api', chatLogRoutes);
 
-
-// ✅ Session & Passport
+// ✅ Session & Passport (for Google OAuth)
 app.use(session({
   secret: process.env.SESSION_SECRET || "super-secret",
   resave: false,
@@ -48,21 +46,32 @@ app.use(passport.initialize());
 app.use(passport.session());
 require("./config/passport"); // Google bind strategy
 
-// ✅ Routes
-const sortaRoute = require("./routes/sorta");
-const authRoutes = require("./routes/auth");
-const adminRoutes = require("./routes/admin");
+// ✅ Static route for avatars
+app.use("/avatars", express.static("public/avatars"));
 
+// ✅ API Routes
 app.use("/api/sorta", sortaRoute);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/logs", logRoutes);
+app.use("/api/insights", insightRoutes);
+app.use("/api/dashboard", dashboard);
+app.use("/api/projects", projectRoutes);
+app.use("/api/files", fileRoutes);
+app.use("/api/budget", budgetRoutes);
+app.use("/api/enquiry", enquiryRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/upload", uploadRoutes);
+app.use("/api", chatLogRoutes); // fallback route for other chat logs
+// ❌ Removed: app.use("/api/drive", driveRoutes);
+app.use("/api/drive", driveRoutes);
 
-// ✅ Test Route
+// ✅ Default route
 app.get("/", (req, res) => {
   res.send("Sitesort AI backend running.");
 });
 
-// ✅ Connect to MongoDB THEN start server
+// ✅ MongoDB Connect THEN start server
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -76,33 +85,3 @@ mongoose.connect(process.env.MONGO_URI, {
   .catch(err => {
     console.error("❌ MongoDB connection error:", err);
   });
-
-// ✅ Google Drive integration (optional feature, kept at bottom)
-const auth = new google.auth.GoogleAuth({
-  keyFile: path.join(__dirname, 'dark-stratum-465506-u8-6a66584f85aa.json'),
-  scopes: ['https://www.googleapis.com/auth/drive'],
-});
-
-async function listDriveFiles() {
-  const authClient = await auth.getClient();
-  const drive = google.drive({ version: 'v3', auth: authClient });
-
-  const folderId = '1C4linCEdD24PPVWPmtFhrRXC4C9GhuPR'; // Replace with your folder ID
-
-  const res = await drive.files.list({
-    q: `'${folderId}' in parents`,
-    fields: 'files(id, name)',
-  });
-
-  console.log('Files:', res.data.files);
-}
-
-app.use("/avatars", express.static("public/avatars"));
-app.use("/api/logs", logRoutes);
-app.use("/", chatRoutes);
-app.use("/api/chat", chatRoutes);    // ✅ for file upload: /api/chat/upload-summarize
-
-app.use(bodyParser.json());
-
-
-listDriveFiles().catch(console.error);

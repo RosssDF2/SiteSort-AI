@@ -1,12 +1,20 @@
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const User = require('../models/User'); // your User model
+const User = require('../models/User');
 
+// 🔗 GOOGLE BIND STRATEGY
 passport.use("google-bind", new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   callbackURL: "http://localhost:3001/api/auth/google/callback",
-  passReqToCallback: true
+  passReqToCallback: true,
+  scope: [
+    'https://www.googleapis.com/auth/drive.metadata.readonly',
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile'
+  ],
+  accessType: 'offline',
+  prompt: 'consent'
 }, async (req, accessToken, refreshToken, profile, done) => {
   try {
     const loggedInUserId = req.session.tempUserId;
@@ -18,11 +26,12 @@ passport.use("google-bind", new GoogleStrategy({
     user.googleId = profile.id;
     user.isGoogleLinked = true;
     user.googleEmail = profile.emails[0].value;
-    await user.save();
+    user.googleAccessToken = accessToken;
+    user.googleRefreshToken = refreshToken;
 
+    await user.save();
     return done(null, user);
   } catch (err) {
-    // 👇 Catch MongoDB duplicate key error (code 11000)
     if (err.code === 11000) {
       req.session.googleBindError = "duplicate";
       return done(null, false);
@@ -31,15 +40,25 @@ passport.use("google-bind", new GoogleStrategy({
   }
 }));
 
-
+// 🔐 GOOGLE LOGIN STRATEGY
 passport.use("google-login", new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "/api/auth/google/login/callback"
+  callbackURL: "/api/auth/google/login/callback",
+  scope: [
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile'
+  ],
+  accessType: 'offline',
+  prompt: 'consent'
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     const existingUser = await User.findOne({ googleId: profile.id });
-    if (!existingUser) return done(null, false); // Not bound
+    if (!existingUser) return done(null, false);
+
+    existingUser.googleAccessToken = accessToken;
+    existingUser.googleRefreshToken = refreshToken;
+    await existingUser.save();
 
     return done(null, existingUser);
   } catch (err) {

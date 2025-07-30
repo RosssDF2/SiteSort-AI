@@ -38,8 +38,17 @@ router.get("/google/bind", (req, res, next) => {
     return res.status(401).json({ error: "Session expired or not authorized." });
   }
 
-  passport.authenticate("google-bind", { scope: ["profile", "email"] })(req, res, next);
+  passport.authenticate("google-bind", {
+    scope: [
+      "profile",
+      "email",
+      "https://www.googleapis.com/auth/drive.metadata.readonly"  // ✅ Add this
+    ],
+    accessType: "offline", // ✅ Optional: to get refresh token
+    prompt: "consent"       // ✅ Optional: force account selection & consent
+  })(req, res, next);
 });
+
 
 // ✅ Step 2: Google OAuth Callback
 router.get("/google/callback",
