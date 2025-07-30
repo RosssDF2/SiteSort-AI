@@ -1,4 +1,3 @@
-// src/components/ChatBot.jsx
 import React, { useState, useContext, useEffect, useRef } from "react";
 import {
   Box,
@@ -36,10 +35,9 @@ function ChatBot() {
   useEffect(() => {
     axios.get("/api/chatlog")
       .then(({ data }) => {
-        // data = array of { prompt, response, _id }
         const loaded = data.map((c) => ({
-          title: c.prompt.slice(0, 20),
-          messages: [
+          title: c.title || c.prompt.slice(0, 20),
+          messages: c.messages || [
             { sender: "user", text: c.prompt },
             { sender: "ai", text: c.response }
           ]
@@ -78,7 +76,6 @@ function ChatBot() {
     setInput("");
 
     try {
-      // 2a) Send prompt to AI
       const { data } = await axios.post(
         "http://localhost:3001/chat",
         { prompt: text },
@@ -88,14 +85,15 @@ function ChatBot() {
       const final = [...updated, aiMsg];
       setMessages(final);
 
-      // 2b) Persist Q&A to your chatlog endpoint
-      axios
-        .post(
-          "http://localhost:3001/api/chatlog",
-          { prompt: text, response: data },
-          { withCredentials: true }
-        )
-        .catch((err) => console.error("Failed to save chatlog:", err));
+      // ✅ Save full chat
+      await axios.post(
+        "http://localhost:3001/api/chatlog",
+        {
+          title: updated[0]?.text.slice(0, 20) || "New Chat",
+          messages: final
+        },
+        { withCredentials: true }
+      );
 
       // Update sidebar history
       const title = updated[0]?.text.slice(0, 20) || "New Chat";
@@ -131,7 +129,7 @@ function ChatBot() {
               setActiveIndex(i);
               setMessages(history[i].messages);
             }}
-            onNew={startNewChat}
+            onNewChat={startNewChat}
           />
         </Box>
 
@@ -271,7 +269,10 @@ function ChatBot() {
                           const { data } = await axios.post(
                             "http://localhost:3001/api/chat/upload-summarize",
                             formData,
-                            { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
+                            {
+                              headers: { "Content-Type": "multipart/form-data" },
+                              withCredentials: true
+                            }
                           );
 
                           const userFileMsg = { sender: "user", text: `📎 Uploaded file: ${file.name}` };
@@ -280,10 +281,13 @@ function ChatBot() {
                           const updated = [...messages, userFileMsg, aiReplyMsg];
                           setMessages(updated);
 
-                          // Save to chatlog if you want
+                          // ✅ Save full chat
                           await axios.post(
                             "http://localhost:3001/api/chatlog",
-                            { prompt: `📎 Uploaded file: ${file.name}`, response: data.summary },
+                            {
+                              title: updated[0]?.text.slice(0, 20) || "File Upload",
+                              messages: updated
+                            },
                             { withCredentials: true }
                           );
 
@@ -304,7 +308,6 @@ function ChatBot() {
                           setUploading(false);
                         }
                       }}
-
                     />
                   </IconButton>
                   <IconButton
