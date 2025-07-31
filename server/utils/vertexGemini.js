@@ -187,9 +187,79 @@ ${extractedText}
     }
 }
 
+// 🌟 Ask Gemini (Zara's version for SiteSort AI)
+async function askSiteSortAI(prompt) {
+    if (!prompt || prompt.trim().length < 2) {
+        return {
+            reply: "Hello! I'm SiteSort AI — ready to help with your files, insights, and questions.",
+            blocked: false,
+        };
+    }
 
+    const estimated = estimateTokens(prompt);
+    if (tokenUsageToday + estimated > DAILY_TOKEN_CAP) {
+        return {
+            reply: "⚠️ SiteSort AI has reached today's usage cap. Please try again tomorrow!",
+            blocked: true,
+        };
+    }
+
+    let context = "";
+    try {
+        const knowledgePath = path.resolve(__dirname, "../sitesort_knowledge.txt"); // You can create a separate file for this AI if needed
+        const fullContext = fs.readFileSync(knowledgePath, "utf-8");
+        context = extractRelevantContext(prompt, fullContext);
+    } catch (err) {
+        console.warn("⚠️ Could not load SiteSort AI knowledge file:", err.message);
+        context = "SiteSort AI is a powerful assistant built to help project teams manage and understand their documents with smart summaries, file search, and data insights.";
+    }
+
+    try {
+        const result = await model.generateContent({
+            contents: [
+                {
+                    role: "user",
+                    parts: [
+                        {
+                            text:
+                                `You are SiteSort AI, a smart assistant that helps construction and project teams understand files, reports, and documents.\n\n` +
+                                `Here is your knowledge:\n${context.trim()}\n\n` +
+                                `User asked: "${prompt.trim()}"\n` +
+                                `Respond with clear and professional answers. No intros, just give the useful answer.\n` +
+                                `SiteSort AI:`,
+                        },
+                    ],
+                },
+            ],
+        });
+
+        let reply = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "❌ No response.";
+
+        // Cleanup greeting/intros if AI ignores instruction
+        reply = reply.replace(/^(hi|hello|hey|greetings)[.! ]*[\s\n-]*/i, "").trim();
+        reply = reply.replace(/^i'?m (sitesort ai|an ai assistant)[\s\S]*?(?=\n|\.|:)/i, "").trim();
+
+        if (reply.length < 20 || /^[a-z]/.test(reply)) {
+            reply = `I'm SiteSort AI — your assistant for navigating project data, reports, and insights. How can I help today?`;
+        }
+
+        tokenUsageToday += estimateTokens(reply) + estimated;
+
+        return {
+            reply,
+            blocked: false,
+        };
+    } catch (err) {
+        console.error("❌ SiteSort AI Error:", err.message || err);
+        return {
+            reply: "❌ SiteSort AI ran into an issue. Try again later.",
+            blocked: true,
+        };
+    }
+}
 module.exports = {
-    askGemini,
+    askGemini, // Sorta
+    askSiteSortAI, // 🔥 New!
     generateBudgetJSON,
     summarizeDocumentBuffer,
 };

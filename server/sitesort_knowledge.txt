@@ -1,0 +1,110 @@
+📚 **Welcome to SiteSort AI – Your High-End Construction Document Intelligence System**
+
+SiteSort AI is built for professional project teams who need reliable, intelligent document handling across large-scale construction workflows. It offers structured automation, smart classification, and advanced query resolution — all tailored for the construction industry.
+
+---
+
+📄 **File Upload & Auto-Categorization**
+
+* Navigate to the **Upload** tab.
+* Upload PDF, Word, Excel, and image-based documents.
+* AI automatically analyzes and files them into:
+
+  * Financial Records
+  * Structural & Technical Drawings
+  * Contracts & Tender Documents
+  * Project Timelines & Schedules
+  * Safety & Compliance Reports
+
+> SiteSort AI applies multi-layer tagging to support cross-category visibility.
+
+---
+
+📁 **Intelligent Document Search**
+
+* Use natural language queries like:
+
+  * “Show all tenders submitted last month”
+  * “Find latest BQ under Project Yewtee”
+* SiteSort AI scans metadata, OCR text, and AI-generated tags to retrieve:
+
+  * Matching files
+  * Executive summaries
+  * File previews with key context
+
+> Search is case-insensitive, date-aware, and folder-agnostic.
+
+---
+
+📊 **Smart Dashboard Insights**
+
+* Access the **Dashboard** tab for:
+
+  * File volume breakdowns by project and type
+  * Aggregated financial summaries
+  * Auto-detected missing file alerts (e.g., late submissions)
+  * AI-generated insights and flags
+
+> Dashboards refresh live as uploads are made.
+
+---
+
+🗺️ **Help & Task Guidance**
+
+* Ask SiteSort AI:
+
+  * “How to tag tender documents?”
+  * “Where is the profile photo setting?”
+  * “Guide me to financial summaries”
+
+SiteSort AI only responds based on live platform features. No hallucination or fake features allowed.
+
+---
+
+👤 **Account & Profile Management**
+
+* Admin-created accounts only (no public signup).
+* Manage your profile from **Profile > Personal Info**:
+
+  * Edit name, email, phone, birthday, gender, address, and photo
+* Change password from **Profile > Password Manager**
+* Review your own action history at **Profile > View Logs**
+
+---
+
+🔐 **Google Integration & 2FA Security**
+
+* Go to **Profile > Security Settings > Bind Google Account**
+* Once bound:
+
+  * Google & 2FA icons turn green
+  * Password resets are enabled
+  * Extra login verification via Gmail
+
+**FAQs:**
+
+* **Why bind Google?** To enable 2FA and secure password recovery.
+* **Is it required?** No, but unlinked accounts may risk lockouts.
+* **Forgot password with no binding?** Contact admin to send manual reset.
+
+---
+
+🛠️ **Known Issues & Industry-Safe Practices**
+
+* **Wrong folder?** Use the re-tagging feature or move manually.
+* **Search didn’t work?** Rephrase using project or date-specific language.
+* **Want to delete files?** Not supported — re-upload with correct versioning.
+
+---
+
+💡 **Power User Tips**
+
+* Use clear keywords when searching: e.g., “May Tender Drawing” > “May file”
+* View file summaries directly without downloading
+* Revisit SiteSort AI anytime via the floating help bubble
+
+> Designed for modern construction firms. Secure, scalable, and smart.
+
+---
+
+SiteSort AI is your always-available document assistant. Every interaction is built to meet the standards of professional construction documentation workflows.
