@@ -85,6 +85,23 @@ function Upload() {
   const [suggestedFolder, setSuggestedFolder] = useState("General");
   const [manualFolder, setManualFolder] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploadHistory, setUploadHistory] = useState([]);
+
+  useEffect(() => {
+    fetchUploadHistory();
+  }, []);
+
+  const fetchUploadHistory = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:3001/api/upload/history", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUploadHistory(res.data);
+    } catch (err) {
+      console.error("❌ Failed to fetch history:", err.message);
+    }
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -136,6 +153,7 @@ function Upload() {
     formData.append("file", selectedFile);
     formData.append("folderId", manualFolder);
     formData.append("originalName", selectedFile.name);
+    formData.append("tags", tags.join(","));
 
     if (!manualFolder) {
       alert("❌ Please select a folder.");
@@ -155,6 +173,7 @@ function Upload() {
       setSelectedFile(null);
       setTags([]);
       setManualFolder("");
+      await fetchUploadHistory(); // ⬅️ Refresh history
     } catch (err) {
       console.error("Confirm failed:", err.response?.data || err.message);
       alert("❌ Confirm upload failed.");
@@ -288,6 +307,23 @@ function Upload() {
           <Typography mt={2}>Analyzing file with AI...</Typography>
         </Box>
       )}
+
+      <Box mt={10} ml={{ xs: 0, md: '240px' }} pr={3} px={4}>
+        <Typography variant="h5" mb={2}>📜 Upload History</Typography>
+        {uploadHistory.map((entry, i) => (
+          <Paper key={i} sx={{ p: 2, mb: 2, backgroundColor: "#F0FDF4" }}>
+            <Typography fontWeight="bold">{entry.filename}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {new Date(entry.createdAt).toLocaleString()}
+            </Typography>
+            <Box mt={1} display="flex" flexWrap="wrap" gap={1}>
+              {entry.tags.map((tag, idx) => (
+                <Chip key={idx} label={tag} size="small" color="primary" />
+              ))}
+            </Box>
+          </Paper>
+        ))}
+      </Box>
 
       <SortaBot />
     </MainLayout>

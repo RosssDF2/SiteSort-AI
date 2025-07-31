@@ -1,13 +1,15 @@
 // server/controllers/dashboardController.js
 const File = require("../models/File");
+const { listAllFilesRecursive } = require("../utils/driveHelper");
 
 exports.getDashboardData = async (req, res) => {
   try {
     const userId = req.user.id;
     const files = await File.find({ uploadedBy: userId });
 
-    const totalFiles = files.length;
-    const folderCounts = {};
+    const parentFolderId = "1C4linCEdD24PPVWPmtFhrRXC4C9GhuPR";
+    const allDriveFiles = await listAllFilesRecursive(parentFolderId);
+    const totalFiles = allDriveFiles.length; const folderCounts = {};
     const rfiCountThisWeek = files.filter(f => f.originalName.includes("RFI") && isThisWeek(f.uploadedAt)).length;
 
     files.forEach(f => {

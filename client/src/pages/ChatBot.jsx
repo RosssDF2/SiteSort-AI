@@ -1,13 +1,7 @@
 import React, { useState, useContext, useEffect, useRef } from "react";
 import {
-  Box,
-  Container,
-  Typography,
-  Paper,
-  TextField,
-  IconButton,
-  Button,
-  Stack
+  Box, Container, Typography, Paper, TextField, IconButton,
+  Button, Stack
 } from "@mui/material";
 import { UserContext } from "../contexts/UserContext";
 import ChatLayout from "../layouts/ChatLayout";
@@ -24,19 +18,18 @@ function ChatBot() {
   const { user } = useContext(UserContext);
   const username = user?.username || user?.email?.split("@")[0] || "Guest";
   const [uploading, setUploading] = useState(false);
-
   const [history, setHistory] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const scrollRef = useRef(null);
 
-  // 1) Load saved chats on mount
   useEffect(() => {
     axios.get("/api/chatlog")
       .then(({ data }) => {
         const loaded = data.map((c) => ({
-          title: c.title || c.prompt.slice(0, 20),
+          _id: c._id,
+          title: c.title || c.prompt?.slice(0, 20),
           messages: c.messages || [
             { sender: "user", text: c.prompt },
             { sender: "ai", text: c.response }
@@ -49,7 +42,6 @@ function ChatBot() {
       });
   }, []);
 
-  // Auto‑scroll on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -62,6 +54,36 @@ function ChatBot() {
     { label: "Analyze May 12 Files", icon: <CalendarTodayIcon /> },
     { label: "Browse by Date", icon: <FolderIcon /> }
   ];
+
+  const deleteChat = async (index) => {
+    const chat = history[index];
+    if (!chat || !chat._id) {
+      console.error("⛔ Chat not found or missing _id:", chat);
+      return;
+    }
+
+    const confirmed = window.confirm("Delete this chat permanently?");
+    if (!confirmed) return;
+
+    console.log("🗑️ Deleting chat:", chat._id);
+
+    try {
+      const res = await axios.delete(`/api/chatlog/${chat._id}`);
+      console.log("✅ Deleted from DB:", res.data);
+
+      const updated = [...history];
+      updated.splice(index, 1);
+      setHistory(updated);
+
+      if (activeIndex === index) {
+        setMessages([]);
+        setActiveIndex(null);
+      }
+    } catch (err) {
+      console.error("❌ Failed to delete:", err.response?.data || err.message);
+    }
+  };
+
 
   const startNewChat = () => {
     setMessages([]);
@@ -76,17 +98,18 @@ function ChatBot() {
     setInput("");
 
     try {
-      const { data } = await axios.post(
-        "http://localhost:3001/chat",
+      const { data: reply } = await axios.post(
+        "http://localhost:3001/api/chat/chat",
         { prompt: text },
         { withCredentials: true }
       );
-      const aiMsg = { sender: "ai", text: data };
+
+      const aiMsg = { sender: "ai", text: reply };
       const final = [...updated, aiMsg];
       setMessages(final);
 
-      // ✅ Save full chat
-      await axios.post(
+      // ✅ Save full chat and store _id
+      const { data: savedChat } = await axios.post(
         "http://localhost:3001/api/chatlog",
         {
           title: updated[0]?.text.slice(0, 20) || "New Chat",
@@ -95,14 +118,13 @@ function ChatBot() {
         { withCredentials: true }
       );
 
-      // Update sidebar history
-      const title = updated[0]?.text.slice(0, 20) || "New Chat";
+      const title = savedChat.title;
       const newHist = [...history];
       if (activeIndex === null) {
-        newHist.push({ title, messages: final });
+        newHist.push({ _id: savedChat._id, title, messages: final });
         setActiveIndex(newHist.length - 1);
       } else {
-        newHist[activeIndex] = { title, messages: final };
+        newHist[activeIndex] = { _id: savedChat._id, title, messages: final };
       }
       setHistory(newHist);
     } catch (err) {
@@ -130,6 +152,9 @@ function ChatBot() {
               setMessages(history[i].messages);
             }}
             onNewChat={startNewChat}
+            onDeleteChat={deleteChat}
+            onUpdateHistory={setHistory} // ✅ new
+
           />
         </Box>
 
@@ -151,16 +176,12 @@ function ChatBot() {
                 flex: 1,
                 display: "flex",
                 flexDirection: "column",
-                justifyContent:
-                  messages.length === 0 ? "center" : "flex-start",
+                justifyContent: messages.length === 0 ? "center" : "flex-start",
                 overflowY: "auto",
                 bgcolor: "#fafafa"
               }}
             >
-              <Container
-                maxWidth="sm"
-                sx={{ py: 3, maxWidth: 650 }}
-              >
+              <Container maxWidth="sm" sx={{ py: 3, maxWidth: 650 }}>
                 <Typography
                   variant="h4"
                   gutterBottom
@@ -191,11 +212,7 @@ function ChatBot() {
                           variant="outlined"
                           startIcon={qp.icon}
                           onClick={() => sendMessage(qp.label)}
-                          sx={{
-                            color: "#10B981",
-                            borderColor: "#10B981",
-                            mb: 1
-                          }}
+                          sx={{ color: "#10B981", borderColor: "#10B981", mb: 1 }}
                         >
                           {qp.label}
                         </Button>
@@ -209,8 +226,7 @@ function ChatBot() {
                     key={idx}
                     sx={{
                       display: "flex",
-                      justifyContent:
-                        msg.sender === "user" ? "flex-end" : "flex-start",
+                      justifyContent: msg.sender === "user" ? "flex-end" : "flex-start",
                       mb: 1
                     }}
                   >
@@ -218,8 +234,7 @@ function ChatBot() {
                       sx={{
                         p: 1.5,
                         maxWidth: "75%",
-                        bgcolor:
-                          msg.sender === "user" ? "#e0f7fa" : "#ffffff"
+                        bgcolor: msg.sender === "user" ? "#e0f7fa" : "#ffffff"
                       }}
                     >
                       <Typography>{msg.text}</Typography>
@@ -229,7 +244,7 @@ function ChatBot() {
               </Container>
             </Box>
 
-            {/* Floating Input */}
+            {/* Input */}
             <Box sx={{ position: "absolute", bottom: 16, width: "100%" }}>
               <Container maxWidth="sm" sx={{ maxWidth: 650 }}>
                 <Paper
@@ -263,7 +278,6 @@ function ChatBot() {
 
                         const formData = new FormData();
                         formData.append("file", file);
-
                         setUploading(true);
                         try {
                           const { data } = await axios.post(
@@ -275,33 +289,29 @@ function ChatBot() {
                             }
                           );
 
-                          const userFileMsg = { sender: "user", text: `📎 Uploaded file: ${file.name}` };
-                          const aiReplyMsg = { sender: "ai", text: data.summary };
+                          const userMsg = { sender: "user", text: `📎 Uploaded file: ${file.name}` };
+                          const aiMsg = { sender: "ai", text: data.summary };
+                          const final = [...messages, userMsg, aiMsg];
+                          setMessages(final);
 
-                          const updated = [...messages, userFileMsg, aiReplyMsg];
-                          setMessages(updated);
-
-                          // ✅ Save full chat
-                          await axios.post(
+                          const { data: savedChat } = await axios.post(
                             "http://localhost:3001/api/chatlog",
                             {
-                              title: updated[0]?.text.slice(0, 20) || "File Upload",
-                              messages: updated
+                              title: file.name,
+                              messages: final
                             },
                             { withCredentials: true }
                           );
 
-                          // Update sidebar history
-                          const title = updated[0]?.text.slice(0, 20) || "File Upload";
+                          const title = savedChat.title;
                           const newHist = [...history];
                           if (activeIndex === null) {
-                            newHist.push({ title, messages: updated });
+                            newHist.push({ _id: savedChat._id, title, messages: final });
                             setActiveIndex(newHist.length - 1);
                           } else {
-                            newHist[activeIndex] = { title, messages: updated };
+                            newHist[activeIndex] = { _id: savedChat._id, title, messages: final };
                           }
                           setHistory(newHist);
-
                         } catch (err) {
                           console.error("Upload error:", err);
                         } finally {

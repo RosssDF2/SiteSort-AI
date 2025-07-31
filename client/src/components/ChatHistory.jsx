@@ -17,8 +17,9 @@ import {
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import AddIcon from "@mui/icons-material/Add";
+import axios from "axios"; // add this at the top
 
-function ChatHistory({ history, onSelect, onNewChat }) {
+function ChatHistory({ history, onSelect, onNewChat, onDeleteChat, onUpdateHistory }) {
   const [search, setSearch] = useState("");
   const [editIndex, setEditIndex] = useState(null);
   const [editText, setEditText] = useState("");
@@ -47,13 +48,41 @@ function ChatHistory({ history, onSelect, onNewChat }) {
     handleMenuClose();
   };
 
-  const confirmEdit = () => {
-    if (editText.trim()) {
-      history[editIndex].title = editText;
-      onSelect(editIndex);
+  const confirmEdit = async () => {
+    if (!editText.trim()) {
+      setEditIndex(null);
+      return;
     }
-    setEditIndex(null);
+
+    const chat = history[editIndex];
+    if (!chat || !chat._id) {
+      console.error("⛔ Chat missing _id:", chat);
+      setEditIndex(null);
+      return;
+    }
+
+    try {
+      const { data: updatedChat } = await axios.put(`/api/chatlog/${chat._id}`, {
+        title: editText
+      });
+
+      const updatedHistory = [...history];
+      updatedHistory[editIndex] = {
+        ...updatedHistory[editIndex],
+        title: updatedChat.title // ✅ apply new title locally
+      };
+
+      // ✅ reflect changes in ChatBot
+      setEditIndex(null);
+      setEditText("");
+      onUpdateHistory(updatedHistory); // ✅ CORRECT
+      onSelect(editIndex);
+    } catch (err) {
+      console.error("❌ Failed to update title:", err.response?.data || err.message);
+      setEditIndex(null);
+    }
   };
+
 
   const handleDelete = () => {
     setConfirmDeleteIndex(menuIndex);
@@ -61,10 +90,12 @@ function ChatHistory({ history, onSelect, onNewChat }) {
   };
 
   const confirmDelete = () => {
-    history.splice(confirmDeleteIndex, 1);
+    if (typeof confirmDeleteIndex === "number") {
+      onDeleteChat(confirmDeleteIndex); // ✅ delegate to ChatBot.jsx
+    }
     setConfirmDeleteIndex(null);
-    if (history.length > 0) onSelect(0);
   };
+
 
   const handleClearAll = () => {
     history.splice(0, history.length);
@@ -179,7 +210,7 @@ function ChatHistory({ history, onSelect, onNewChat }) {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEditIndex(null)} sx={{color: "#10B981"}}>Cancel</Button>
+          <Button onClick={() => setEditIndex(null)} sx={{ color: "#10B981" }}>Cancel</Button>
           <Button
             onClick={confirmEdit}
             variant="contained"
@@ -203,7 +234,7 @@ function ChatHistory({ history, onSelect, onNewChat }) {
           <Typography>Are you sure you want to delete this chat?</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmDeleteIndex(null)} sx={{color: "#10B981"}}>Cancel</Button>
+          <Button onClick={() => setConfirmDeleteIndex(null)} sx={{ color: "#10B981" }}>Cancel</Button>
           <Button
             onClick={confirmDelete}
             color="error"

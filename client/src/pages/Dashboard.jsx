@@ -479,7 +479,7 @@ const Dashboard = () => {
                             )}
                         </Grid>
 
-                        
+
 
                         <Box mt={6} flexGrow={1} display="flex" flexDirection="column" justifyContent="flex-end">
                             <Card sx={{ minHeight: "45vh", display: "flex", flexDirection: "column", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
@@ -567,16 +567,19 @@ const Dashboard = () => {
                     {isPrompt && (
                         <TextField
                             autoFocus
-                            margin="dense"
+                            margin="normal"
                             id="dialog-input"
-                            label="Input"
-                            type="text"
+                            label="Insight Summary"
+                            multiline
+                            rows={6}
                             fullWidth
-                            variant="standard"
+                            variant="outlined"
                             value={dialogInput}
                             onChange={(e) => setDialogInput(e.target.value)}
+                            sx={{ minWidth: "500px" }}
                         />
                     )}
+
                 </DialogContent>
                 <DialogActions>
                     {dialogCallback ? (
