@@ -3,10 +3,10 @@
 
 ## WHO IS WORKING ON WHAT
 
-Rosnanda : -
-Firman : -
-Jeslyn : -
-Zara : -
+- Rosnanda : -
+- Firman : -
+- Jeslyn : -
+- Zara : -
 
 ## 👋 Project Overview
 
