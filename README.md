@@ -1,6 +1,13 @@
 # SiteSort-AI
 # 📁 SiteSort AI – Full Stack Web App
 
+## WHO IS WORKING ON WHAT
+
+Rosnanda : -
+Firman : -
+Jeslyn : -
+Zara : -
+
 ## 👋 Project Overview
 
 SiteSort AI is a smart web app built to help **project managers** in the construction industry sort, tag, and retrieve files efficiently using AI. Our app solves the problem of messy folders and scattered documents by using features like:
