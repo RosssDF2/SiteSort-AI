@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, useRef } from "react";
 import {
   Box, Container, Typography, Paper, TextField, IconButton,
-  Button, Stack
+  Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions
 } from "@mui/material";
 import { UserContext } from "../contexts/UserContext";
 import ChatLayout from "../layouts/ChatLayout";
@@ -12,6 +12,7 @@ import InsertChartIcon from "@mui/icons-material/InsertChart";
 import SummarizeIcon from "@mui/icons-material/Summarize";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import FolderIcon from "@mui/icons-material/Folder";
+import { Link } from "react-router-dom";
 import axios from "axios";
 
 function ChatBot() {
@@ -24,6 +25,17 @@ function ChatBot() {
   const [input, setInput] = useState("");
   const scrollRef = useRef(null);
 
+  // Dialog state for saving AI response
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [lastAIMessageIndex, setLastAIMessageIndex] = useState(null);
+
+  // Helper: format date string "YYYY-MM-DD" to "13 Aug 2025"
+  const formatDate = (dateStr) => {
+    const options = { day: "numeric", month: "short", year: "numeric" };
+    return new Date(dateStr).toLocaleDateString("en-GB", options);
+  };
+
+  // Load chat history, map and sort by newest first
   useEffect(() => {
     axios.get("/api/chatlog")
       .then(({ data }) => {
@@ -33,8 +45,9 @@ function ChatBot() {
           messages: c.messages || [
             { sender: "user", text: c.prompt },
             { sender: "ai", text: c.response }
-          ]
-        }));
+          ],
+          createdAt: c.createdAt || new Date().toISOString()
+        })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setHistory(loaded);
       })
       .catch((err) => {
@@ -61,20 +74,13 @@ function ChatBot() {
       console.error("⛔ Chat not found or missing _id:", chat);
       return;
     }
-
     const confirmed = window.confirm("Delete this chat permanently?");
     if (!confirmed) return;
-
-    console.log("🗑️ Deleting chat:", chat._id);
-
     try {
-      const res = await axios.delete(`/api/chatlog/${chat._id}`);
-      console.log("✅ Deleted from DB:", res.data);
-
+      await axios.delete(`/api/chatlog/${chat._id}`);
       const updated = [...history];
       updated.splice(index, 1);
       setHistory(updated);
-
       if (activeIndex === index) {
         setMessages([]);
         setActiveIndex(null);
@@ -83,7 +89,6 @@ function ChatBot() {
       console.error("❌ Failed to delete:", err.response?.data || err.message);
     }
   };
-
 
   const startNewChat = () => {
     setMessages([]);
@@ -108,27 +113,52 @@ function ChatBot() {
       const final = [...updated, aiMsg];
       setMessages(final);
 
-      // ✅ Save full chat and store _id
       const { data: savedChat } = await axios.post(
         "http://localhost:3001/api/chatlog",
         {
           title: updated[0]?.text.slice(0, 20) || "New Chat",
-          messages: final
+          messages: final,
+          createdAt: new Date().toISOString()
         },
         { withCredentials: true }
       );
 
-      const title = savedChat.title;
       const newHist = [...history];
       if (activeIndex === null) {
-        newHist.push({ _id: savedChat._id, title, messages: final });
-        setActiveIndex(newHist.length - 1);
+        newHist.unshift({ _id: savedChat._id, title: savedChat.title, messages: final, createdAt: savedChat.createdAt });
+        setActiveIndex(0);
       } else {
-        newHist[activeIndex] = { _id: savedChat._id, title, messages: final };
+        newHist[activeIndex] = { _id: savedChat._id, title: savedChat.title, messages: final, createdAt: savedChat.createdAt };
       }
       setHistory(newHist);
+
+      // Show popup to save AI response
+      setLastAIMessageIndex(final.length - 1);
+      setSaveDialogOpen(true);
     } catch (err) {
       console.error("Chat error:", err);
+    }
+  };
+
+  // Handle saving AI message as summary or report
+  const handleSave = async (type) => {
+    if (lastAIMessageIndex === null) return;
+    const msg = messages[lastAIMessageIndex];
+    if (!msg || msg.sender !== "ai") return;
+
+    try {
+      await axios.post(`http://localhost:3001/api/${type}`, {
+        content: msg.text,
+        chatId: history[activeIndex]?._id || null,
+        timestamp: new Date().toISOString()
+      });
+
+      alert(`Saved as ${type}!`);
+      setSaveDialogOpen(false);
+      setLastAIMessageIndex(null);
+    } catch (err) {
+      console.error("Failed to save", err);
+      alert("Save failed");
     }
   };
 
@@ -153,8 +183,8 @@ function ChatBot() {
             }}
             onNewChat={startNewChat}
             onDeleteChat={deleteChat}
-            onUpdateHistory={setHistory} // ✅ new
-
+            onUpdateHistory={setHistory}
+            formatDate={formatDate}
           />
         </Box>
 
@@ -189,6 +219,16 @@ function ChatBot() {
                 >
                   Chat with SiteSort AI
                 </Typography>
+
+                {/* Navigation buttons */}
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 3 }}>
+                  <Button component={Link} to="/reports" variant="outlined" sx={{ color: "#10B981", borderColor: "#10B981" }}>
+                    View Reports
+                  </Button>
+                  <Button component={Link} to="/summaries" variant="outlined" sx={{ color: "#10B981", borderColor: "#10B981" }}>
+                    View Summaries
+                  </Button>
+                </Box>
 
                 {messages.length === 0 && (
                   <>
@@ -298,7 +338,8 @@ function ChatBot() {
                             "http://localhost:3001/api/chatlog",
                             {
                               title: file.name,
-                              messages: final
+                              messages: final,
+                              createdAt: new Date().toISOString()
                             },
                             { withCredentials: true }
                           );
@@ -306,12 +347,17 @@ function ChatBot() {
                           const title = savedChat.title;
                           const newHist = [...history];
                           if (activeIndex === null) {
-                            newHist.push({ _id: savedChat._id, title, messages: final });
-                            setActiveIndex(newHist.length - 1);
+                            newHist.unshift({ _id: savedChat._id, title, messages: final, createdAt: savedChat.createdAt });
+                            setActiveIndex(0);
                           } else {
-                            newHist[activeIndex] = { _id: savedChat._id, title, messages: final };
+                            newHist[activeIndex] = { _id: savedChat._id, title, messages: final, createdAt: savedChat.createdAt };
                           }
                           setHistory(newHist);
+
+                          // Show popup to save AI response for uploaded summary
+                          setLastAIMessageIndex(final.length - 1);
+                          setSaveDialogOpen(true);
+
                         } catch (err) {
                           console.error("Upload error:", err);
                         } finally {
@@ -332,6 +378,27 @@ function ChatBot() {
           </Paper>
         </Box>
       </Box>
+
+      {/* Save AI Response Dialog */}
+      <Dialog open={saveDialogOpen} onClose={() => setSaveDialogOpen(false)}>
+        <DialogTitle>Save AI Response</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Would you like to save this AI response as a Summary or Report?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => handleSave("summaries")} color="primary">
+            Save as Summary
+          </Button>
+          <Button onClick={() => handleSave("reports")} color="primary">
+            Save as Report
+          </Button>
+          <Button onClick={() => setSaveDialogOpen(false)} color="inherit">
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
     </ChatLayout>
   );
 }

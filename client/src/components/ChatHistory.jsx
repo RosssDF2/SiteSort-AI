@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Button,
@@ -17,39 +17,62 @@ import {
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import AddIcon from "@mui/icons-material/Add";
-import axios from "axios"; // add this at the top
+import axios from "axios";
 
-function ChatHistory({ history, onSelect, onNewChat, onDeleteChat, onUpdateHistory }) {
+function ChatHistory({ history, onSelect, onNewChat, onDeleteChat, onUpdateHistory, activeIndex, formatDate }) {
   const [search, setSearch] = useState("");
   const [editIndex, setEditIndex] = useState(null);
   const [editText, setEditText] = useState("");
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState(null);
   const [menuAnchor, setMenuAnchor] = useState(null);
-  const [menuIndex, setMenuIndex] = useState(null);
+  const [menuGlobalIndex, setMenuGlobalIndex] = useState(null); // store global index here
 
-  const filteredHistory = history.filter((chat) =>
-    chat.title.toLowerCase().includes(search.toLowerCase())
-  );
+  // Filter chats by search term
+  const filteredHistory = useMemo(() => {
+    return history.filter((chat) =>
+      chat.title.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [history, search]);
 
-  const handleMenuOpen = (event, index) => {
+  // Group chats by date (yyyy-mm-dd)
+  const groupedChats = useMemo(() => {
+    const groups = {};
+    filteredHistory.forEach((chat) => {
+      // Normalize date part only, ignore time
+      const dateKey = chat.createdAt ? chat.createdAt.slice(0, 10) : "Unknown Date";
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(chat);
+    });
+
+    // Sort dates descending (latest first)
+    const sortedDates = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a));
+
+    return sortedDates.map(date => ({
+      date,
+      chats: groups[date]
+    }));
+  }, [filteredHistory]);
+
+  const handleMenuOpen = (event, globalIndex) => {
     setMenuAnchor(event.currentTarget);
-    setMenuIndex(index);
+    setMenuGlobalIndex(globalIndex); // store global index
   };
 
   const handleMenuClose = () => {
     setMenuAnchor(null);
-    setMenuIndex(null);
+    setMenuGlobalIndex(null);
   };
 
   const handleEdit = () => {
-    const chat = history[menuIndex];
-    setEditIndex(menuIndex);
+    if (menuGlobalIndex === null) return;
+    const chat = history[menuGlobalIndex];
+    setEditIndex(menuGlobalIndex);
     setEditText(chat.title);
     handleMenuClose();
   };
 
   const confirmEdit = async () => {
-    if (!editText.trim()) {
+    if (!editText.trim() || editIndex === null) {
       setEditIndex(null);
       return;
     }
@@ -69,13 +92,12 @@ function ChatHistory({ history, onSelect, onNewChat, onDeleteChat, onUpdateHisto
       const updatedHistory = [...history];
       updatedHistory[editIndex] = {
         ...updatedHistory[editIndex],
-        title: updatedChat.title // ✅ apply new title locally
+        title: updatedChat.title
       };
 
-      // ✅ reflect changes in ChatBot
       setEditIndex(null);
       setEditText("");
-      onUpdateHistory(updatedHistory); // ✅ CORRECT
+      onUpdateHistory(updatedHistory);
       onSelect(editIndex);
     } catch (err) {
       console.error("❌ Failed to update title:", err.response?.data || err.message);
@@ -83,19 +105,17 @@ function ChatHistory({ history, onSelect, onNewChat, onDeleteChat, onUpdateHisto
     }
   };
 
-
   const handleDelete = () => {
-    setConfirmDeleteIndex(menuIndex);
+    setConfirmDeleteIndex(menuGlobalIndex);
     handleMenuClose();
   };
 
   const confirmDelete = () => {
-    if (typeof confirmDeleteIndex === "number") {
-      onDeleteChat(confirmDeleteIndex); // ✅ delegate to ChatBot.jsx
+    if (confirmDeleteIndex !== null) {
+      onDeleteChat(confirmDeleteIndex);
     }
     setConfirmDeleteIndex(null);
   };
-
 
   const handleClearAll = () => {
     history.splice(0, history.length);
@@ -143,41 +163,67 @@ function ChatHistory({ history, onSelect, onNewChat, onDeleteChat, onUpdateHisto
       </Typography>
 
       <Box flexGrow={1} overflow="auto">
-        <List dense>
-          {filteredHistory.map((chat, index) => (
-            <ListItem
-              key={index}
+        {groupedChats.length === 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+            No chats found.
+          </Typography>
+        )}
+        {groupedChats.map(({ date, chats }) => (
+          <Box key={date} sx={{ mb: 2 }}>
+            <Typography
+              variant="caption"
               sx={{
-                justifyContent: "space-between",
-                alignItems: "center",
+                pl: 1,
                 mb: 1,
-                bgcolor: "#fff",
-                borderRadius: 1,
-                boxShadow: 1,
-                px: 1
+                color: "text.secondary",
+                fontWeight: 600,
+                userSelect: "none"
               }}
-              onClick={() => onSelect(index)}
             >
-              <Typography
-                variant="body2"
-                sx={{ flex: 1, cursor: "pointer" }}
-                noWrap
-              >
-                {chat.title}
-              </Typography>
+              {formatDate ? formatDate(date) : date}
+            </Typography>
 
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMenuOpen(e, index);
-                }}
-              >
-                <MoreVertIcon fontSize="small" />
-              </IconButton>
-            </ListItem>
-          ))}
-        </List>
+            <List dense>
+              {chats.map((chat) => {
+                const globalIndex = history.findIndex(h => h._id === chat._id);
+                return (
+                  <ListItem
+                    key={chat._id}
+                    sx={{
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 1,
+                      bgcolor: globalIndex === activeIndex ? "#d1fae5" : "#fff",
+                      borderRadius: 1,
+                      boxShadow: 1,
+                      px: 1,
+                      cursor: "pointer"
+                    }}
+                    onClick={() => onSelect(globalIndex)}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      title={chat.title}
+                    >
+                      {chat.title}
+                    </Typography>
+
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMenuOpen(e, globalIndex); // pass global index here!
+                      }}
+                    >
+                      <MoreVertIcon fontSize="small" />
+                    </IconButton>
+                  </ListItem>
+                );
+              })}
+            </List>
+          </Box>
+        ))}
       </Box>
 
       <Divider sx={{ my: 2 }} />

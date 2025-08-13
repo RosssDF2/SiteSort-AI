@@ -16,6 +16,8 @@ import ChatBot from "./pages/ChatBot"; // ✅ ZARA's ChatBot Page
 import About from "./pages/About";     // ✅ If you have an About page
 import Enquiry from "./pages/Enquiry";
 import Upload from "./pages/Upload";
+import Reports from './pages/Reports';
+import Summaries from './pages/Summaries';
 function App() {
   return (
     <BrowserRouter>
@@ -38,6 +40,8 @@ function App() {
         <Route path="/enquiry" element={<Enquiry />} />
         {/* ✅ About Page */}
         <Route path="/upload" element={<Upload />} />
+         <Route path="/reports" element={<Reports />} />
+        <Route path="/summaries" element={<Summaries />} />
       </Routes>
     </BrowserRouter>
   );
