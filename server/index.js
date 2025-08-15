@@ -25,6 +25,9 @@ const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/admin");
 const driveRoutes = require("./routes/driveRoutes");
 const debugRoutes = require("./routes/debugRoutes");
+const summaryRoutes = require("./routes/summaries");
+const reportRoutes = require("./routes/reports");
+
 
 // 🆕 You will re-add /api/drive once your OAuth drive route is implemented
 
@@ -67,6 +70,9 @@ app.use("/api", chatLogRoutes); // fallback route for other chat logs
 // ❌ Removed: app.use("/api/drive", driveRoutes);
 app.use("/api/drive", driveRoutes);
 app.use("/api", debugRoutes);
+app.use("/api/summaries", summaryRoutes);
+app.use("/api/reports", reportRoutes);
+
 
 // ✅ Default route
 app.get("/", (req, res) => {
