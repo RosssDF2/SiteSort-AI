@@ -24,7 +24,6 @@ import { UserContext } from "../contexts/UserContext";
 import ProjectFileExplorer from "../components/ProjectFileExplorer";
 import BudgetChart from "../components/BudgetChart";
 
-
 // --- Hardcoded PDF Content for Demonstration ---
 // This content is extracted from your "Project Budget 1.pdf".
 // In a real application, this would come from a backend PDF parser.
@@ -358,6 +357,13 @@ const Dashboard = () => {
         }
     };
 
+    useEffect(() => {
+        const fetchInsights = async () => {
+            const res = await axios.get("/api/insights");
+            setInsights(res.data || []);
+        };
+        fetchInsights();
+    }, []);
 
     useEffect(() => {
         const fetchDashboardAndInsights = async () => {
@@ -470,8 +476,7 @@ const Dashboard = () => {
                                         <ProjectFileExplorer />
                                     </Grid>
                                     <Grid item xs={12} md={6}>
-                                        <BudgetChart />
-                                    </Grid>
+                                        {null /* Budget is visualized inside ProjectFileExplorer now */}                                    </Grid>
 
 
 
