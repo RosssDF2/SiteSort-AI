@@ -92,3 +92,68 @@ exports.listProjects = async (_req, res) => {
     return res.status(500).json({ error: "Unable to list projects" });
   }
 };
+
+exports.getProjectStats = async (req, res) => {
+  const { id } = req.params; // project folder ID
+
+  try {
+    const authClient = await auth.getClient();
+    const drive = google.drive({ version: "v3", auth: authClient });
+
+    // 1. List subfolders of this project
+    const subfoldersRes = await drive.files.list({
+      q: `'${id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: "files(id, name)",
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    });
+
+    const subfolders = subfoldersRes.data.files || [];
+    const rfiFolder = subfolders.find((f) => f.name.toLowerCase() === "rfi");
+    const rfqFolder = subfolders.find((f) => f.name.toLowerCase() === "rfq");
+
+    // 2. Count all files under the project (excluding trashed)
+    const allFilesRes = await drive.files.list({
+      q: `'${id}' in parents and trashed=false`,
+      fields: "files(id)",
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    });
+    const totalFiles = allFilesRes.data.files?.length || 0;
+
+    // 3. Get files inside RFI folder
+    let rfiFiles = [];
+    if (rfiFolder) {
+      const rfiRes = await drive.files.list({
+        q: `'${rfiFolder.id}' in parents and trashed=false`,
+        fields: "files(id, name)",
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+      });
+      rfiFiles = rfiRes.data.files || [];
+    }
+
+    // 4. Get files inside RFQ folder
+    let rfqFiles = [];
+    if (rfqFolder) {
+      const rfqRes = await drive.files.list({
+        q: `'${rfqFolder.id}' in parents and trashed=false`,
+        fields: "files(id, name)",
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+      });
+      rfqFiles = rfqRes.data.files || [];
+    }
+
+    return res.json({
+      totalFiles,
+      rfiCount: rfiFiles.length,
+      rfiMessages: rfiFiles.map((f) => f.name),
+      rfqCount: rfqFiles.length,
+      rfqMessages: rfqFiles.map((f) => f.name),
+    });
+  } catch (error) {
+    console.error("❌ Failed to fetch project stats:", error);
+    return res.status(500).json({ error: "Unable to fetch project stats" });
+  }
+};

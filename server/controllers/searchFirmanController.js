@@ -7,6 +7,8 @@ const {
   summarizeDocumentBuffer,
   extractStructuredBudget,
 } = require("../utils/vertexGemini");
+const { extractRFIorRFQ } = require("../utils/vertexGemini");
+
 
 // In-memory cache
 const CACHE_TTL_MS = 10 * 60 * 1000;
@@ -25,6 +27,10 @@ function withTimeout(promise, ms, label = "operation") {
       setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
     ),
   ]);
+}
+
+function pickFilesByKeyword(files, keyword) {
+  return files.filter(f => new RegExp(keyword, "i").test(f.name));
 }
 
 // --- tolerant PDF text extractor (handles "Command token too long") ---
@@ -117,6 +123,9 @@ function mockExtras() {
 /**
  * GET /api/search-firman/summary?folderId=...
  */
+/**
+ * GET /api/search-firman/summary?folderId=...
+ */
 exports.summary = async (req, res) => {
   try {
     const { folderId } = req.query;
@@ -125,63 +134,102 @@ exports.summary = async (req, res) => {
     const authClient = await auth.getClient();
     const drive = google.drive({ version: "v3", auth: authClient });
 
-    // 1) List all files
+    // 1) List everything in the project folder (recursive)
     const allFiles = await listAllFilesRecursive(folderId);
-    console.log("📂 All files found:", allFiles.map((f) => f.name));
+    const pdfFiles = (allFiles || []).filter(f => f.mimeType === "application/pdf");
 
-    const pdfFiles = (allFiles || []).filter(
-      (f) => f.mimeType === "application/pdf"
-    );
+    // Heuristics: pick by filename. (If you want strict subfolders, see note below.)
+    const rfiFiles = pdfFiles.filter(f => /(^|[^a-z])RFI([^a-z]|$)/i.test(f.name));
+    const rfqFiles = pdfFiles.filter(f => /(^|[^a-z])RFQ([^a-z]|$)/i.test(f.name));
+
+    // Budget file (existing logic)
     const budgetFile = pickBestBudgetFile(pdfFiles);
-    const latestModified = budgetFile
-      ? new Date(budgetFile.modifiedTime).getTime()
-      : 0;
 
+    // --- compute a "latestModified" across budget + rfi + rfq for proper cache invalidation
+    const allForCache = []
+      .concat(budgetFile ? [budgetFile] : [])
+      .concat(rfiFiles)
+      .concat(rfqFiles);
+    const latestModified = allForCache.length
+      ? Math.max(
+        ...allForCache
+          .map(f => new Date(f.modifiedTime || 0).getTime())
+          .filter(n => Number.isFinite(n))
+      )
+      : 0;
 
     // 2) Cache check
     const now = Date.now();
     const cached = cache.get(folderId);
-    if (
-      cached &&
-      cached.expiresAt > now &&
-      cached.modifiedTime === latestModified
-    ) {
-      console.log("⚡ Serving from cache (no new budget file detected)");
+    if (cached && cached.expiresAt > now && cached.modifiedTime === latestModified) {
       return res.json(cached.data);
     }
 
-    console.log("📂 PDF files found (with modifiedTime):", pdfFiles.map(f => ({
-      name: f.name,
-      modified: f.modifiedTime
-    })));
+    // 3) Start building the response
+    const documents = []; // you already use this shape
+    const rfi = (documents || []).filter(d => (d.category || "").toUpperCase() === "RFI")
+      .map(d => ({
+        fileName: d.fileName,
+        messages: Array.isArray(d.messages) ? d.messages : [],
+      }));
 
-    const documents = [];
+    const rfq = (documents || []).filter(d => (d.category || "").toUpperCase() === "RFQ")
+      .map(d => ({
+        fileName: d.fileName,
+        messages: Array.isArray(d.messages) ? d.messages : [],
+      }));      // [{ fileName, messages }]
 
+    // Helper: download -> Buffer
+    async function downloadFileBuffer(fileId) {
+      const fileRes = await withTimeout(
+        drive.files.get({ fileId, alt: "media" }, { responseType: "stream" }),
+        30000,
+        "Drive download"
+      );
+      return await new Promise((resolve, reject) => {
+        const chunks = [];
+        fileRes.data
+          .on("data", c => chunks.push(c))
+          .on("end", () => resolve(Buffer.concat(chunks)))
+          .on("error", reject);
+      });
+    }
+
+    // 4) RFI extraction loop
+    for (const f of rfiFiles) {
+      try {
+        const buffer = await downloadFileBuffer(f.id);
+        const extractedText = (await withTimeout(safeExtractText(buffer), 25000, "PDF parse (safe)")).trim();
+        const ai = await withTimeout(extractRFIorRFQ(extractedText, f.name), 20000, "RFI AI extract");
+        rfi.push({ fileName: ai.fileName || f.name, messages: Array.isArray(ai.messages) ? ai.messages : [] });
+        // also add to documents for your existing UI (optional)
+        documents.push({ fileName: ai.fileName || f.name, category: "RFI", messages: ai.messages || [] });
+      } catch (e) {
+        rfi.push({ fileName: f.name, messages: ["❌ Failed to parse"] });
+        documents.push({ fileName: f.name, category: "RFI", messages: ["❌ Failed to parse"] });
+      }
+    }
+
+    // 5) RFQ extraction loop
+    for (const f of rfqFiles) {
+      try {
+        const buffer = await downloadFileBuffer(f.id);
+        const extractedText = (await withTimeout(safeExtractText(buffer), 25000, "PDF parse (safe)")).trim();
+        const ai = await withTimeout(extractRFIorRFQ(extractedText, f.name), 20000, "RFQ AI extract");
+        rfq.push({ fileName: ai.fileName || f.name, messages: Array.isArray(ai.messages) ? ai.messages : [] });
+        documents.push({ fileName: ai.fileName || f.name, category: "RFQ", messages: ai.messages || [] });
+      } catch (e) {
+        rfq.push({ fileName: f.name, messages: ["❌ Failed to parse"] });
+        documents.push({ fileName: f.name, category: "RFQ", messages: ["❌ Failed to parse"] });
+      }
+    }
+
+    // 6) Budget (your existing logic)
     if (budgetFile) {
       try {
-        // Download + parse PDF
-        const fileRes = await withTimeout(
-          drive.files.get(
-            { fileId: budgetFile.id, alt: "media" },
-            { responseType: "stream" }
-          ),
-          30000,
-          "Drive download"
-        );
+        const buffer = await downloadFileBuffer(budgetFile.id);
+        const extractedText = (await withTimeout(safeExtractText(buffer), 25000, "PDF parse (safe)")).trim();
 
-        const buffer = await new Promise((resolve, reject) => {
-          const chunks = [];
-          fileRes.data
-            .on("data", (c) => chunks.push(c))
-            .on("end", () => resolve(Buffer.concat(chunks)))
-            .on("error", reject);
-        });
-
-        const extractedText = (
-          await withTimeout(safeExtractText(buffer), 25000, "PDF parse (safe)")
-        ).trim();
-
-        // Try structured extraction
         let docObj = null;
         try {
           docObj = await withTimeout(
@@ -190,7 +238,7 @@ exports.summary = async (req, res) => {
             "Structured budget extraction"
           );
         } catch (err) {
-          console.error("❌ Structured extraction failed:", err.message);
+          // fall back to a short summary
         }
 
         if (!docObj) {
@@ -215,14 +263,12 @@ exports.summary = async (req, res) => {
 
         // Normalize
         docObj.fileName = docObj.fileName || budgetFile.name;
-        if (!docObj.metrics)
-          docObj.metrics = { used: null, remaining: null };
+        if (!docObj.metrics) docObj.metrics = { used: null, remaining: null };
         if (!Array.isArray(docObj.updates)) docObj.updates = [];
         if (!Array.isArray(docObj.risks)) docObj.risks = [];
 
         documents.push(docObj);
       } catch (e) {
-        console.error("❌ Budget parsing failed:", e.message);
         documents.push({
           fileName: budgetFile.name,
           category: "Budget",
@@ -231,8 +277,7 @@ exports.summary = async (req, res) => {
           table: null,
           updates: [],
           risks: ["Budget document could not be parsed (Low)"],
-          insight:
-            "Could not parse budget PDF in time. Try again or check the file.",
+          insight: "Could not parse budget PDF in time. Try again or check the file.",
         });
       }
     } else {
@@ -248,10 +293,22 @@ exports.summary = async (req, res) => {
       });
     }
 
-    // Add mocks
+    // 7) Optionally add your demo mocks
     documents.push(...mockExtras());
 
-    const payload = { documents };
+    // 8) Totals + payload
+    const payload = {
+      documents,
+      rfi,
+      rfq,
+      counts: {
+        totalFiles: allFiles.length,
+        rfiCount: rfi.length,
+        rfqCount: rfq.length,
+      },
+    };
+
+    // 9) Cache
     cache.set(folderId, {
       expiresAt: now + CACHE_TTL_MS,
       modifiedTime: latestModified,
@@ -264,3 +321,6 @@ exports.summary = async (req, res) => {
     return res.status(500).json({ error: "AI analysis failed" });
   }
 };
+
+
+

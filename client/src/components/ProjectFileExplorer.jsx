@@ -469,8 +469,12 @@ export default function ProjectFileExplorer({ onNewInsight }) {
 
                 {/* All other docs (Resources + Safety Audit + etc.) → 2 per row */}
                 {sortedDocs
-                    .filter((d) => (d.category || "").toLowerCase() !== "budget") // only exclude budget
+                    .filter((d) => {
+                        const cat = (d.category || "").toLowerCase();
+                        return cat !== "budget" && cat !== "rfi" && cat !== "rfq";
+                    })
                     .map((doc, idx) => {
+
                         const cat = (doc.category || "Unknown").toLowerCase();
                         const hasTable = Array.isArray(doc.table) && doc.table.length > 1;
 

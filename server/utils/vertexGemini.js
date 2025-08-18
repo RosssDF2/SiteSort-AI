@@ -283,9 +283,9 @@ async function askSiteSortAI(prompt) {
     }
 }
 
-// 🎯 New: Structured Budget Extractor
+// 🎯 Improved Structured Budget Extractor with retries + repair
 async function extractStructuredBudget(extractedText, filename) {
-    const prompt = `
+    const basePrompt = (docText) => `
 You are an AI that extracts budget data from construction project PDFs.
 
 Return **valid JSON only** in this exact schema:
@@ -300,13 +300,13 @@ Return **valid JSON only** in this exact schema:
   "insight": string
 }
 
-Guidelines:
-- Always include a "table" with rows as arrays (header + categories).
-- Fill "updates" with clear status messages (e.g., "Budget utilization at 72.6%").
-- Fill "risks" with concise risks, and mark severity like (High Risk), (Medium Risk), (Low Risk).
-- "insight" must be a short recommendation for the project manager.
-- Numbers in "metrics" must be plain integers (no commas, no text).
-- Do NOT wrap in markdown or prose, just raw JSON.
+Rules:
+- Output must be raw JSON (no markdown, no comments).
+- "metrics.used" and "metrics.remaining" must be numbers only.
+- Always include "table" (header + rows).
+- "updates" should be clear status points.
+- "risks" should have severity markers (High/Medium/Low Risk).
+- "insight" = one short recommendation.
 
 Example:
 {
@@ -315,54 +315,53 @@ Example:
   "metrics": { "used": 3270000, "remaining": 1230000 },
   "table": [
     ["Category", "Allocated", "Used", "Remaining", "%"],
-    ["Preliminaries", "500k", "460k", "40k", "92%"],
-    ["Structural Works", "2M", "1.4M", "600k", "70%"]
+    ["Preliminaries", "500k", "460k", "40k", "92%"]
   ],
-  "updates": [
-    "Budget utilization at 72.6%",
-    "Structural works at 70%"
-  ],
-  "risks": [
-    "Structural works overruns possible (High Risk)",
-    "Cashflow tight (Medium Risk)"
-  ],
-  "insight": "AI suggests reviewing subcontractor invoices for possible cost overruns."
+  "updates": ["Budget utilization at 72.6%"],
+  "risks": ["Structural works overruns possible (High Risk)"],
+  "insight": "Review subcontractor invoices for cost overruns."
 }
 
 Now process this document:
 
 Title: ${filename}
 Content:
-${extractedText.slice(0, 2500)}
-    `.trim();
+${docText.slice(0, 2500)}
+`.trim();
 
-    try {
+    const toNum = (x) =>
+        typeof x === "number" ? x : Number(String(x).replace(/[^\d.-]/g, "")) || null;
+
+    async function runPrompt(prompt) {
         const result = await model.generateContent({
             contents: [{ role: "user", parts: [{ text: prompt }] }],
         });
+        return result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    }
 
-        // 🎯 Safer JSON extraction
-        const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        // Remove markdown code fences if present
-        const cleaned = text.replace(/```json|```/gi, "").trim();
+    try {
+        // --- First attempt
+        let raw = await runPrompt(basePrompt(extractedText));
+        let parsed = tryRepairJSON(raw, filename);
 
-        // Try to find the first JSON object
-        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error("AI did not return valid JSON");
+        // --- Retry once with stricter rules if failed
+        if (!parsed) {
+            console.warn("⚠️ First parse failed, retrying for:", filename);
+            raw = await runPrompt(
+                basePrompt(extractedText) +
+                "\n\nIMPORTANT: Return ONLY valid JSON. No explanations, no markdown."
+            );
+            parsed = tryRepairJSON(raw, filename);
+        }
 
-        const parsed = tryRepairJSON(text, filename);
-        if (!parsed) throw new Error("AI did not return valid JSON");
-        // coerce metrics to numbers when possible
-        const toNum = (x) =>
-            typeof x === "number" ? x : Number(String(x).replace(/[^\d.-]/g, "")) || null;
+        if (!parsed) throw new Error("AI did not return valid JSON after 2 tries");
 
+        // Coerce metrics safely
         if (parsed.metrics) {
             parsed.metrics.used = toNum(parsed.metrics.used);
             parsed.metrics.remaining = toNum(parsed.metrics.remaining);
         }
 
-
-        // 🛡️ Ensure schema safety
         return {
             fileName: parsed.fileName || filename,
             category: "Budget",
@@ -373,7 +372,7 @@ ${extractedText.slice(0, 2500)}
             insight: parsed.insight || "No insight available.",
         };
     } catch (err) {
-        console.error("❌ Structured Budget Extraction failed:", err.message);
+        console.error("❌ Structured Budget Extraction failed:", filename, err.message);
         return {
             fileName: filename,
             category: "Budget",
@@ -385,6 +384,7 @@ ${extractedText.slice(0, 2500)}
         };
     }
 }
+
 
 // 🌟 Generic text generator (for AI Manager "Next Steps")
 async function generateText(prompt) {
@@ -402,6 +402,50 @@ async function generateText(prompt) {
     }
 }
 
+
+async function extractRFIorRFQ(extractedText, filename) {
+    const prompt = `
+You are an AI that processes construction project PDFs for RFIs (Requests for Information) or RFQs (Requests for Quotation).
+
+Return valid JSON ONLY in this schema:
+{
+  "fileName": string,
+  "category": "RFI" | "RFQ",
+  "messages": string[]
+}
+
+Rules:
+- If the file clearly contains RFI data, set category = "RFI".
+- If the file clearly contains RFQ data, set category = "RFQ".
+- "messages" should be an array of key bullet points, questions, or items inside the PDF.
+- No markdown, no explanations — just raw JSON.
+File: ${filename}
+Content:
+${extractedText.slice(0, 2000)}
+    `.trim();
+
+    try {
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+        const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const parsed = tryRepairJSON(text, filename);
+        if (!parsed) throw new Error("Invalid JSON");
+
+        return {
+            fileName: parsed.fileName || filename,
+            category: parsed.category || (filename.includes("RFI") ? "RFI" : "RFQ"),
+            messages: parsed.messages || [],
+        };
+    } catch (err) {
+        console.error("❌ RFI/RFQ extraction failed:", filename, err.message);
+        return {
+            fileName: filename,
+            category: filename.includes("RFI") ? "RFI" : "RFQ",
+            messages: ["⚠️ Could not parse messages"],
+        };
+    }
+}
 module.exports = {
     askGemini,
     askSiteSortAI,
@@ -409,4 +453,5 @@ module.exports = {
     summarizeDocumentBuffer,
     extractStructuredBudget,
     generateText,        // 👈 added
+    extractRFIorRFQ
 };
