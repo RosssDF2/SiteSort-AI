@@ -37,6 +37,31 @@ resetDailyTokenUsage();
 function estimateTokens(text) {
     return Math.ceil(text.trim().split(/\s+/).length * 1.3);
 }
+function tryRepairJSON(text, filename) {
+    if (!text) return null;
+
+    // Strip markdown fences
+    let cleaned = text.replace(/```json|```/gi, "").trim();
+
+    // Grab first JSON object
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+
+    let candidate = jsonMatch[0];
+
+    // Basic fixes
+    candidate = candidate
+        .replace(/,\s*}/g, "}")   // remove trailing commas before }
+        .replace(/,\s*]/g, "]")   // remove trailing commas before ]
+        .replace(/'/g, '"');      // single → double quotes
+
+    try {
+        return JSON.parse(candidate);
+    } catch (err) {
+        console.warn("⚠️ JSON repair still failed for", filename, err.message);
+        return null;
+    }
+}
 
 // 🔍 Match only the relevant section based on keywords
 function extractRelevantContext(prompt, context) {
@@ -325,7 +350,16 @@ ${extractedText.slice(0, 2500)}
         const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("AI did not return valid JSON");
 
-        const parsed = JSON.parse(jsonMatch[0]);
+        const parsed = tryRepairJSON(text, filename);
+        if (!parsed) throw new Error("AI did not return valid JSON");
+        // coerce metrics to numbers when possible
+        const toNum = (x) =>
+            typeof x === "number" ? x : Number(String(x).replace(/[^\d.-]/g, "")) || null;
+
+        if (parsed.metrics) {
+            parsed.metrics.used = toNum(parsed.metrics.used);
+            parsed.metrics.remaining = toNum(parsed.metrics.remaining);
+        }
 
 
         // 🛡️ Ensure schema safety

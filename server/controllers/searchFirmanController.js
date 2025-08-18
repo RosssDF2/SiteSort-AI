@@ -27,6 +27,34 @@ function withTimeout(promise, ms, label = "operation") {
   ]);
 }
 
+// --- tolerant PDF text extractor (handles "Command token too long") ---
+async function safeExtractText(buffer) {
+  // 1) Fast path: try normal parse
+  try {
+    const parsed = await pdf(buffer);
+    if (parsed?.text?.trim()) return parsed.text;
+  } catch (_) {
+    // fall through to lenient mode
+  }
+
+  // 2) Lenient path: truncate absurdly long tokens per page
+  const options = {
+    max: 0, // all pages
+    pagerender: async (pageData) => {
+      const tc = await pageData.getTextContent();
+      const parts = tc.items.map((it) => {
+        const s = typeof it.str === "string" ? it.str : "";
+        // cap each token to 128 chars to avoid crashing parser
+        return s.length > 128 ? s.slice(0, 128) : s;
+      });
+      return parts.join(" ");
+    },
+  };
+
+  const parsedLenient = await pdf(buffer, options);
+  return parsedLenient?.text || "";
+}
+
 // Pick latest budget/financial PDF by modifiedTime
 function pickBestBudgetFile(files) {
   const budgetFiles = files.filter((f) =>
@@ -149,8 +177,9 @@ exports.summary = async (req, res) => {
             .on("error", reject);
         });
 
-        const parsed = await withTimeout(pdf(buffer), 20000, "PDF parse");
-        const extractedText = (parsed.text || "").trim();
+        const extractedText = (
+          await withTimeout(safeExtractText(buffer), 25000, "PDF parse (safe)")
+        ).trim();
 
         // Try structured extraction
         let docObj = null;
