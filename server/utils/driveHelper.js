@@ -1,31 +1,37 @@
+// server/utils/driveHelper.js
 const { google } = require("googleapis");
 const path = require("path");
 
-// Auth using your existing JSON
 const auth = new google.auth.GoogleAuth({
-  keyFile: path.join(__dirname, "../keys/firman.json"), // double-check your path
-  scopes: ["https://www.googleapis.com/auth/drive"]
+  keyFile: path.join(__dirname, "../keys/firman.json"),
+  scopes: ["https://www.googleapis.com/auth/drive"],
 });
 
-// Main function: recursively list all files in folder + subfolders
+/**
+ * Recursively list all files under a folder (including in subfolders).
+ * Returns: [{ id, name, mimeType, parents? }, ...]
+ */
 async function listAllFilesRecursive(folderId) {
   const authClient = await auth.getClient();
   const drive = google.drive({ version: "v3", auth: authClient });
 
-  let allFiles = [];
+  const allFiles = [];
 
-  async function listFilesInFolder(folderId) {
+  async function listFilesInFolder(fid) {
+    // List immediate children
     const res = await drive.files.list({
-      q: `'${folderId}' in parents and trashed = false`,
-      fields: "files(id, name, mimeType)",
+      q: `'${fid}' in parents and trashed=false`,
+      fields: "files(id, name, mimeType, parents, modifiedTime)",
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+      pageSize: 1000,
     });
 
-    for (const file of res.data.files) {
+    for (const file of res.data.files || []) {
       if (file.mimeType === "application/vnd.google-apps.folder") {
-        // 📂 If folder, recurse
+        // Recurse into subfolder
         await listFilesInFolder(file.id);
       } else {
-        // 📄 It's a file
         allFiles.push(file);
       }
     }

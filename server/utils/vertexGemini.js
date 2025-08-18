@@ -257,9 +257,105 @@ async function askSiteSortAI(prompt) {
         };
     }
 }
+
+// 🎯 New: Structured Budget Extractor
+async function extractStructuredBudget(extractedText, filename) {
+    const prompt = `
+You are an AI that extracts budget data from construction project PDFs.
+
+Return **valid JSON only** in this exact schema:
+
+{
+  "fileName": string,
+  "category": "Budget",
+  "metrics": { "used": number, "remaining": number },
+  "table": string[][],
+  "updates": string[],
+  "risks": string[],
+  "insight": string
+}
+
+Guidelines:
+- Always include a "table" with rows as arrays (header + categories).
+- Fill "updates" with clear status messages (e.g., "Budget utilization at 72.6%").
+- Fill "risks" with concise risks, and mark severity like (High Risk), (Medium Risk), (Low Risk).
+- "insight" must be a short recommendation for the project manager.
+- Numbers in "metrics" must be plain integers (no commas, no text).
+- Do NOT wrap in markdown or prose, just raw JSON.
+
+Example:
+{
+  "fileName": "Financials_ProjectBudgetSummary.pdf",
+  "category": "Budget",
+  "metrics": { "used": 3270000, "remaining": 1230000 },
+  "table": [
+    ["Category", "Allocated", "Used", "Remaining", "%"],
+    ["Preliminaries", "500k", "460k", "40k", "92%"],
+    ["Structural Works", "2M", "1.4M", "600k", "70%"]
+  ],
+  "updates": [
+    "Budget utilization at 72.6%",
+    "Structural works at 70%"
+  ],
+  "risks": [
+    "Structural works overruns possible (High Risk)",
+    "Cashflow tight (Medium Risk)"
+  ],
+  "insight": "AI suggests reviewing subcontractor invoices for possible cost overruns."
+}
+
+Now process this document:
+
+Title: ${filename}
+Content:
+${extractedText.slice(0, 6000)}
+    `.trim();
+
+    try {
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+
+        // 🎯 Safer JSON extraction
+        const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        // Remove markdown code fences if present
+        const cleaned = text.replace(/```json|```/gi, "").trim();
+
+        // Try to find the first JSON object
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("AI did not return valid JSON");
+
+        const parsed = JSON.parse(jsonMatch[0]);
+
+
+        // 🛡️ Ensure schema safety
+        return {
+            fileName: parsed.fileName || filename,
+            category: "Budget",
+            metrics: parsed.metrics || { used: null, remaining: null },
+            table: parsed.table || [],
+            updates: parsed.updates || [],
+            risks: parsed.risks || [],
+            insight: parsed.insight || "No insight available.",
+        };
+    } catch (err) {
+        console.error("❌ Structured Budget Extraction failed:", err.message);
+        return {
+            fileName: filename,
+            category: "Budget",
+            metrics: { used: null, remaining: null },
+            table: [],
+            updates: [],
+            risks: [],
+            insight: "Failed to extract structured budget data.",
+        };
+    }
+}
+
 module.exports = {
-    askGemini, // Sorta
-    askSiteSortAI, // 🔥 New!
+    askGemini,
+    askSiteSortAI,
     generateBudgetJSON,
     summarizeDocumentBuffer,
+    extractStructuredBudget, // 🔥 New
 };
