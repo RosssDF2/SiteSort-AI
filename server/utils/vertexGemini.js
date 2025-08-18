@@ -308,7 +308,7 @@ Now process this document:
 
 Title: ${filename}
 Content:
-${extractedText.slice(0, 6000)}
+${extractedText.slice(0, 2500)}
     `.trim();
 
     try {
@@ -352,10 +352,27 @@ ${extractedText.slice(0, 6000)}
     }
 }
 
+// 🌟 Generic text generator (for AI Manager "Next Steps")
+async function generateText(prompt) {
+    try {
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+
+        const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+        return text.trim();
+    } catch (err) {
+        console.error("❌ Gemini generateText error:", err.message);
+        throw err;
+    }
+}
+
 module.exports = {
     askGemini,
     askSiteSortAI,
     generateBudgetJSON,
     summarizeDocumentBuffer,
-    extractStructuredBudget, // 🔥 New
+    extractStructuredBudget,
+    generateText,        // 👈 added
 };

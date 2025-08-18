@@ -1,3 +1,4 @@
+// src/pages/Dashboard.jsx
 import React, { useEffect, useState, useContext } from "react";
 import {
     Typography,
@@ -7,111 +8,26 @@ import {
     CardContent,
     Alert,
     Box,
-    TextField, // Added for consistency with MUI
-    Button,    // Added for consistency with MUI
-    Snackbar,  // Added for notifications
-    Select,    // Added for consistency with MUI
-    MenuItem,  // Added for consistency with MUI
-    Dialog,    // For custom prompt/alert
+    TextField,
+    Button,
+    Snackbar,
+    Select,
+    MenuItem,
+    Dialog,
     DialogActions,
     DialogContent,
     DialogContentText,
     DialogTitle,
+    List, ListItem, ListItemText,
 } from "@mui/material";
 import axios from "axios";
 import MainLayout from "../layouts/MainLayout";
 import { UserContext } from "../contexts/UserContext";
 import ProjectFileExplorer from "../components/ProjectFileExplorer";
-import BudgetChart from "../components/BudgetChart";
 
-// --- Hardcoded PDF Content for Demonstration ---
-// This content is extracted from your "Project Budget 1.pdf".
-// In a real application, this would come from a backend PDF parser.
-const PROJECT_BUDGET_PDF_CONTENT = `
---- PAGE 1 ---
-
-Value /
-
-Category / Descriptio Amount
-
-Date
-
-n
-
-Paid
-
-PROJECT BUDGET SUMMARY
-
-Total Project Budget
-
-Amount
-
-Used
-
-Amount Remaining
-
-Notes/
- Vendor
-
-$50,000 Your overall project allocation
-
-$30,000 Calculated automatically below
-
-$20,000
-
-EXPENSE
-
-LOG
-
-Descriptio Amount
-
-Date
-
-n
-
-Paid
-
-Initial
-
-material
-
-Vendor/More Details
-
-1/6/2025 purchase
-
-$5,000 Supplier A
-
-Labor for
-
-Contractor
-
-$10,000 B
-
-15/6/2025 excavation
-
-Electrical
-
-25/6/2025 supplies
-
-$2,000 Supplier C
-
-Concrete
-
-Concrete
-
-1/7/2025 delivery
-
-$13,000 Co.
-
-TOTAL EXPENSES:
-
-$30,000
-`;
-
-// IMPORTANT: Replace with your actual OpenRouter API Key.
-// For production, this should be stored securely on your backend.
-const OPENROUTER_API_KEY = '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';
-const OPENROUTER_MODEL = 'openai/gpt-3.5-turbo'; // Or any other model you prefer on OpenRouter
+const authHeaders = () => ({
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+});
 
 const Dashboard = () => {
     const [data, setData] = useState(null);
@@ -119,63 +35,116 @@ const Dashboard = () => {
     const [error, setError] = useState("");
     const [search, setSearch] = useState("");
     const [type, setType] = useState("");
+    const [tasks, setTasks] = useState([]);
+
     const [insights, setInsights] = useState([]);
     const [newInsight, setNewInsight] = useState("");
     const [viewMode, setViewMode] = useState("basic");
 
-    // State for AI insight and its loading status
-    const [aiInsight, setAiInsight] = useState("No insights available");
-    const [loadingAiInsight, setLoadingAiInsight] = useState(false);
-
-    // State for Snackbar notifications
+    // Snackbar
     const [snackbarOpen, setSnackbarOpen] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState('');
-    const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+    const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
-    // State for custom dialog (replaces prompt/alert)
+    // Dialog
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [dialogTitle, setDialogTitle] = useState('');
-    const [dialogContent, setDialogContent] = useState('');
-    const [dialogInput, setDialogInput] = useState('');
+    const [dialogTitle, setDialogTitle] = useState("");
+    const [dialogContent, setDialogContent] = useState("");
+    const [dialogInput, setDialogInput] = useState("");
     const [dialogCallback, setDialogCallback] = useState(null);
     const [isPrompt, setIsPrompt] = useState(false);
 
+    const [analyzingInsights, setAnalyzingInsights] = useState(false);
 
     const { user } = useContext(UserContext);
 
-    // Custom dialog handler for prompt/alert replacement
-    const showDialog = (title, content, isPrompt = false, callback = null, initialValue = '') => {
+    /* ---------------- Dialog helpers ---------------- */
+    const showDialog = (title, content, isPromptMode = false, callback = null, initialValue = "") => {
         setDialogTitle(title);
         setDialogContent(content);
-        setIsPrompt(isPrompt);
+        setIsPrompt(isPromptMode);
         setDialogInput(initialValue);
         setDialogCallback(() => callback);
         setDialogOpen(true);
     };
 
+
     const handleDialogClose = (result) => {
         setDialogOpen(false);
-
         if (dialogCallback) {
             if (isPrompt) {
-                dialogCallback(result ? dialogInput : null); // for Edit
+                dialogCallback(result ? dialogInput : null);
             } else {
-                dialogCallback(result); // for Confirm Delete
+                dialogCallback(result);
             }
         }
     };
+
+    /* ---------------- Data fetchers ---------------- */
+    const fetchDashboard = async () => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            setError("Missing token. Please log in again.");
+            setLoading(false);
+            return;
+        }
+        try {
+            const dashRes = await axios.get("/api/dashboard", { headers: authHeaders() });
+            setData(dashRes.data);
+        } catch (err) {
+            console.error("Dashboard error:", err.response?.data || err.message);
+            setError("Failed to load dashboard.");
+        }
+    };
+
+    const fetchInsights = async () => {
+        try {
+            const res = await axios.get("/api/insights", { headers: authHeaders() });
+            setInsights(res.data || []);
+        } catch (err) {
+            console.error("Insights fetch error:", err.response?.data || err.message);
+            setSnackbarMessage("Failed to load insights.");
+            setSnackbarSeverity("error");
+            setSnackbarOpen(true);
+        }
+    };
+
+
+
+    useEffect(() => {
+        (async () => {
+            setLoading(true);
+            await Promise.all([fetchDashboard(), fetchInsights()]);
+            setLoading(false);
+        })();
+    }, []);
+
+    const fetchTasks = async () => {
+        try {
+            const res = await axios.get("/api/tasks", { headers: authHeaders() });
+            setTasks(res.data || []);
+        } catch (err) {
+            console.error("Task fetch error", err);
+        }
+    };
+
+    useEffect(() => {
+        (async () => {
+            setLoading(true);
+            await Promise.all([fetchDashboard(), fetchInsights(), fetchTasks()]);
+            setLoading(false);
+        })();
+    }, []);
+
+    /* ---------------- Filters ---------------- */
     const handleApply = async () => {
         setLoading(true);
         try {
             const res = await axios.get("/api/insights", {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
+                headers: authHeaders(),
                 params: { search, type },
             });
-            setData(res.data);
-            // Assuming AI insight might also come from backend if you decide to move it there later
-            setAiInsight(res.data.aiInsight || "No insights available");
+            setInsights(res.data || []);
         } catch (err) {
             console.error("Filter error", err);
             setError("Failed to fetch filtered results.");
@@ -184,23 +153,18 @@ const Dashboard = () => {
         }
     };
 
+    /* ---------------- Insight CRUD ---------------- */
     const handleAddInsight = async () => {
-        if (newInsight.trim() === "") {
+        if (!newInsight.trim()) {
             showDialog("Input Required", "Insight summary cannot be empty!");
             return;
         }
-
         const entry = {
             date: new Date().toLocaleDateString("en-GB"),
-            summary: newInsight,
+            summary: newInsight.trim(),
         };
-
         try {
-            const res = await axios.post("/api/insights", entry, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-            });
+            const res = await axios.post("/api/insights", entry, { headers: authHeaders() });
             setInsights([res.data, ...insights]);
             setNewInsight("");
             setSnackbarMessage("Insight added!");
@@ -216,220 +180,161 @@ const Dashboard = () => {
 
     const handleDeleteInsight = (index) => {
         showDialog("Confirm Delete", "Are you sure you want to delete this insight?", false, async (confirmed) => {
-            if (confirmed) {
-                try {
-                    const insightId = insights[index]._id;
-                    await axios.delete(`/api/insights/${insightId}`, {
-                        headers: {
-                            Authorization: `Bearer ${localStorage.getItem("token")}`,
-                        },
-                    });
-
-                    setInsights(insights.filter((_, i) => i !== index));
-                    setSnackbarMessage("Insight deleted!");
-                    setSnackbarSeverity("success");
-                    setSnackbarOpen(true);
-                } catch (err) {
-                    console.error(err);
-                    setSnackbarMessage("Failed to delete insight");
-                    setSnackbarSeverity("error");
-                    setSnackbarOpen(true);
-                }
+            if (!confirmed) return;
+            try {
+                const insightId = insights[index]._id;
+                await axios.delete(`/api/insights/${insightId}`, { headers: authHeaders() });
+                setInsights(insights.filter((_, i) => i !== index));
+                setSnackbarMessage("Insight deleted!");
+                setSnackbarSeverity("success");
+                setSnackbarOpen(true);
+            } catch (err) {
+                console.error(err);
+                setSnackbarMessage("Failed to delete insight");
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
             }
         });
     };
 
     const handleEditInsight = (index) => {
         showDialog("Edit Insight", "Edit summary:", true, async (edited) => {
-            if (edited !== null && edited.trim() !== "") {
-                try {
-                    const insightId = insights[index]._id;
-                    const res = await axios.put(`/api/insights/${insightId}`, { summary: edited }, {
-                        headers: {
-                            Authorization: `Bearer ${localStorage.getItem("token")}`,
-                        },
-                    });
-
-                    const updated = [...insights];
-                    updated[index] = res.data;
-                    setInsights(updated);
-
-                    setSnackbarMessage("Insight updated!");
-                    setSnackbarSeverity("success");
-                    setSnackbarOpen(true);
-                } catch (err) {
-                    console.error(err);
-                    setSnackbarMessage("Failed to update insight");
-                    setSnackbarSeverity("error");
-                    setSnackbarOpen(true);
-                }
-            } else if (edited !== null) {
+            if (edited === null) return;
+            if (!edited.trim()) {
                 showDialog("Input Required", "Insight summary cannot be empty!");
+                return;
+            }
+            try {
+                const insightId = insights[index]._id;
+                const res = await axios.put(
+                    `/api/insights/${insightId}`,
+                    { summary: edited.trim() },
+                    { headers: authHeaders() }
+                );
+                const updated = [...insights];
+                updated[index] = res.data;
+                setInsights(updated);
+                setSnackbarMessage("Insight updated!");
+                setSnackbarSeverity("success");
+                setSnackbarOpen(true);
+            } catch (err) {
+                console.error(err);
+                setSnackbarMessage("Failed to update insight");
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
             }
         }, insights[index].summary);
     };
-    // Function to generate AI insight directly from frontend using hardcoded PDF content
-    const generateAIInsight = async () => {
-        if (!PROJECT_BUDGET_PDF_CONTENT.trim()) {
-            setSnackbarMessage('No PDF content available to generate insight.');
-            setSnackbarSeverity('warning');
-            setSnackbarOpen(true);
-            return;
-        }
 
-        if (OPENROUTER_API_KEY === 'YOUR_OPENROUTER_API_KEY_HERE' || !OPENROUTER_API_KEY) {
-            setSnackbarMessage('Please replace "YOUR_OPENROUTER_API_KEY_HERE" with your actual OpenRouter API key in Dashboard.jsx!');
-            setSnackbarSeverity('error');
-            setSnackbarOpen(true);
-            return;
-        }
-
-        setLoadingAiInsight(true);
-        setAiInsight('Generating insight...'); // Provide immediate feedback
-
+    /* ---------------- AI Analyze ---------------- */
+    /* ---------------- AI Analyze ---------------- */
+    const handleAnalyzeInsights = async () => {
+        setAnalyzingInsights(true);
         try {
-            // --- AI Model Integration (OpenRouter API) ---
-            const prompt = `Analyze the following construction project budget document content.
-            Provide a concise summary of the project's financial status and 2-3 key insights related to expenses or remaining budget.
-            
-            Document Content:
-            "${PROJECT_BUDGET_PDF_CONTENT}"
-            
-            Summary:
-            Insights:
-            1.
-            2.
-            3.
-            `;
+            const res = await axios.post("/api/insights/analyze", {}, { headers: authHeaders() });
+            const aiData = res.data;
 
-            const openRouterPayload = {
-                model: OPENROUTER_MODEL,
-                messages: [
-                    {
-                        role: 'user',
-                        content: prompt,
-                    },
-                ],
-                // You can add other parameters like temperature, max_tokens, etc.
-                // temperature: 0.7,
-                // max_tokens: 200,
-            };
+            // 👉 Just show the dialog — no inserts here
+            showDialog("AI Manager Next Steps", aiData);
 
-            const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                    'Content-Type': 'application/json',
-                    // Optional: Add your app's URL for OpenRouter analytics
-                    // 'HTTP-Referer': 'http://localhost:3000', // Replace with your actual app URL
-                    // 'X-Title': 'SiteSort AI Dashboard', // A title for your app
-                },
-                body: JSON.stringify(openRouterPayload),
-            });
-
-            if (!openRouterResponse.ok) {
-                const errorData = await openRouterResponse.json();
-                console.error('OpenRouter API error response:', errorData);
-                throw new Error(`OpenRouter API error! Status: ${openRouterResponse.status}, Message: ${errorData.message || 'Unknown error'}`);
-            }
-
-            const openRouterResult = await openRouterResponse.json();
-
-            if (openRouterResult.choices && openRouterResult.choices.length > 0 && openRouterResult.choices[0].message) {
-                const insightText = openRouterResult.choices[0].message.content;
-                setAiInsight(insightText);
-                setSnackbarMessage('AI Insight generated successfully!');
-                setSnackbarSeverity('success');
-            } else {
-                setAiInsight('Failed to get a valid insight from AI.');
-                setSnackbarMessage('OpenRouter response format unexpected.');
-                setSnackbarSeverity('error');
-            }
-
-        } catch (error) {
-            console.error('Error generating AI insight:', error);
-            setAiInsight('Error generating insight. Please check your API key and network connection.');
-            setSnackbarMessage(`Error: ${error.message}`);
-            setSnackbarSeverity('error');
-        } finally {
-            setLoadingAiInsight(false);
+            setSnackbarMessage("AI analysis complete.");
+            setSnackbarSeverity("success");
             setSnackbarOpen(true);
+        } catch (err) {
+            console.error("Analyze error:", err.response?.data || err.message);
+            showDialog("AI Analysis Failed", "Could not analyze insights. Please try again.");
+            setSnackbarMessage("AI analysis failed.");
+            setSnackbarSeverity("error");
+            setSnackbarOpen(true);
+        } finally {
+            setAnalyzingInsights(false);
         }
     };
 
-    useEffect(() => {
-        const fetchInsights = async () => {
-            const res = await axios.get("/api/insights");
-            setInsights(res.data || []);
-        };
-        fetchInsights();
-    }, []);
-
-    useEffect(() => {
-        const fetchDashboardAndInsights = async () => {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                setError("Missing token. Please log in again.");
-                setLoading(false);
-                return;
-            }
-
-            try {
-                const dashRes = await axios.get("/api/dashboard", {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                console.log("✅ Dashboard response:", dashRes.data);
-                setData(dashRes.data);
-
-                const insightRes = await axios.get("/api/insights", {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                console.log("✅ Insight response:", insightRes.data);
-                setInsights(insightRes.data);
-            } catch (err) {
-                console.error("❌ Error fetching dashboard or insights:", err.response?.data || err.message);
-                setError("Failed to load dashboard and insights.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDashboardAndInsights();
-    }, []);
 
 
-    const handleSnackbarClose = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
+    const handleSnackbarClose = (_, reason) => {
+        if (reason === "clickaway") return;
         setSnackbarOpen(false);
     };
 
+    const allCompleted = tasks.length > 0 && tasks.every((t) => t.completed);
+
+    const handleDoneAll = async () => {
+        if (!allCompleted) {
+            setSnackbarMessage("Please complete all tasks before clicking Done.");
+            setSnackbarSeverity("warning");
+            setSnackbarOpen(true);
+            return;
+        }
+
+        try {
+            // ✅ Clear tasks from DB
+            await axios.delete("/api/tasks/all", { headers: authHeaders() });
+            setTasks([]);
+            setSnackbarMessage("All tasks completed! TODO list reset.");
+            setSnackbarSeverity("success");
+            setSnackbarOpen(true);
+        } catch (err) {
+            console.error("Done all error", err);
+        }
+    };
+
+    /* ---------------- Render ---------------- */
     return (
         <MainLayout>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", ml: "240px", pr: "2rem" }}>
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: "1rem",
+                    ml: "240px",
+                    pr: "2rem",
+                }}
+            >
                 <Typography variant="h4"></Typography>
                 <div>
                     <Button
                         onClick={() => setViewMode("basic")}
                         variant={viewMode === "basic" ? "contained" : "outlined"}
-                        sx={{ mr: 1, borderRadius: "6px", backgroundColor: viewMode === "basic" ? "#00796b" : undefined, color: viewMode === "basic" ? "#fff" : undefined }}
+                        sx={{
+                            mr: 1,
+                            borderRadius: "6px",
+                            backgroundColor: viewMode === "basic" ? "#00796b" : undefined,
+                            color: viewMode === "basic" ? "#fff" : undefined,
+                        }}
                     >
                         Basic
                     </Button>
                     <Button
                         onClick={() => setViewMode("advanced")}
                         variant={viewMode === "advanced" ? "contained" : "outlined"}
-                        sx={{ borderRadius: "6px", backgroundColor: viewMode === "advanced" ? "#00796b" : undefined, color: viewMode === "advanced" ? "#fff" : undefined }}
+                        sx={{
+                            borderRadius: "6px",
+                            backgroundColor: viewMode === "advanced" ? "#00796b" : undefined,
+                            color: viewMode === "advanced" ? "#fff" : undefined,
+                        }}
                     >
                         Advance
                     </Button>
                 </div>
             </Box>
 
-            <Box sx={{ padding: "2rem", marginLeft: "240px", display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-                <Typography variant="h4" gutterBottom>Interactive Dashboard</Typography>
-                <Box sx={{ marginBottom: "1rem", display: "flex", gap: "1rem", alignItems: "center" }}>
+            <Box
+                sx={{
+                    p: "2rem",
+                    ml: "240px",
+                    display: "flex",
+                    flexDirection: "column",
+                    minHeight: "100vh",
+                }}
+            >
+                <Typography variant="h4" gutterBottom>
+                    Interactive Dashboard
+                </Typography>
+
+                <Box sx={{ mb: "1rem", display: "flex", gap: "1rem", alignItems: "center" }}>
                     <TextField
                         type="text"
                         placeholder="Search..."
@@ -443,7 +348,6 @@ const Dashboard = () => {
                         value={type}
                         onChange={(e) => setType(e.target.value)}
                         displayEmpty
-                        inputProps={{ 'aria-label': 'Select type' }}
                         size="small"
                         sx={{ minWidth: 120 }}
                     >
@@ -452,128 +356,265 @@ const Dashboard = () => {
                         <MenuItem value="docx">DOCX</MenuItem>
                         <MenuItem value="other">Other</MenuItem>
                     </Select>
-                    <Button onClick={handleApply} variant="contained" sx={{ borderRadius: "6px", backgroundColor: "#00796b" }}>Apply</Button>
+                    <Button onClick={handleApply} variant="contained" sx={{ borderRadius: "6px", backgroundColor: "#00796b" }}>
+                        Apply
+                    </Button>
                 </Box>
 
-                {loading ? <CircularProgress sx={{ m: 4 }} /> : error ? <Alert severity="error" sx={{ m: 4 }}>{error}</Alert> : !data ? <Alert severity="warning" sx={{ m: 4 }}>No dashboard data available.</Alert> : (
-                    <>
-                        <Grid container spacing={3}>
-                            {viewMode === "basic" && (
-                                <>
-                                    <Grid item xs={12} md={4}>
-                                        <StatCard title="📁 Total Files" value={data.totalFiles} />
-                                    </Grid>
-                                    <Grid item xs={12} md={4}>
-                                        <StatCard title="📨 RFIs This Week" value={data.rfiCountThisWeek} />
-                                    </Grid>
-                                </>
-                            )}
+                {loading ? (
+                    <CircularProgress sx={{ m: 4 }} />
+                ) : error ? (
+                    <Alert severity="error" sx={{ m: 4 }}>{error}</Alert>
+                ) : !data ? (
+                    <Alert severity="warning" sx={{ m: 4 }}>No dashboard data available.</Alert>
+                ) : (
+                    <Grid container spacing={3}>
+                        {viewMode === "basic" && (
+                            <>
+                                <Grid item xs={12} md={4}>
+                                    <StatCard title="📁 Total Files" value={data.totalFiles} />
+                                </Grid>
+                                <Grid item xs={12} md={4}>
+                                    <StatCard title="📨 RFIs This Week" value={data.rfiCountThisWeek} />
+                                </Grid>
 
+                                {/* ✅ TODO List Card */}
+                                <Grid item xs={12} md={4}>
+                                    <Card sx={{ p: 2, borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", height: "100%" }}>
+                                        <CardContent>
+                                            <Typography variant="h6" gutterBottom>✅ TODO List</Typography>
 
-                            {viewMode === "advanced" && (
-                                <>
-                                    <Grid item xs={12}>
-                                        <ProjectFileExplorer />
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        {null /* Budget is visualized inside ProjectFileExplorer now */}                                    </Grid>
-
-
-
-                                </>
-                            )}
-                        </Grid>
-
-
-
-                        <Box mt={6} flexGrow={1} display="flex" flexDirection="column" justifyContent="flex-end">
-                            <Card sx={{ minHeight: "45vh", display: "flex", flexDirection: "column", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-                                <CardContent sx={{ flexGrow: 1 }}>
-                                    <Typography variant="h6" gutterBottom>📝 Insight Logs</Typography>
-                                    {viewMode === "basic" ? (
-                                        <Box sx={{ overflowY: "auto", maxHeight: "30vh" }}>
-                                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                                                <thead>
-                                                    <tr>
-                                                        <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>📅 Date</th>
-                                                        <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>🧠 Insight Summary</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {insights.map((log, index) => (
-                                                        <tr key={index}>
-                                                            <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>{log.date}</td>
-                                                            <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>{log.summary}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </Box>
-                                    ) : (
-                                        <>
-                                            <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
-                                                <TextField
-                                                    type="text"
-                                                    placeholder="Enter new insight summary..."
-                                                    value={newInsight}
-                                                    onChange={(e) => setNewInsight(e.target.value)}
-                                                    variant="outlined"
-                                                    size="small"
-                                                    sx={{ flex: 1 }}
-                                                />
-                                                <Button onClick={handleAddInsight} variant="contained" sx={{ borderRadius: "6px", backgroundColor: "#00796b" }}>Add</Button>
-                                            </Box>
-                                            <Box sx={{ overflowY: "auto", maxHeight: "25vh" }}>
-                                                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                                                    <thead>
-                                                        <tr>
-                                                            <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>📅 Date</th>
-                                                            <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>🧠 Insight Summary</th>
-                                                            <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>⚙️ Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {insights.map((log, index) => (
-                                                            <tr key={index}>
-                                                                <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>{log.date}</td>
-                                                                <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>{log.summary}</td>
-                                                                <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>
-                                                                    <Button onClick={() => handleEditInsight(index)} size="small" sx={{ minWidth: "auto", p: "4px", mr: "4px" }}>✏️</Button>
-                                                                    <Button onClick={() => handleDeleteInsight(index)} size="small" sx={{ minWidth: "auto", p: "4px" }}>🗑️</Button>
-                                                                </td>
-                                                            </tr>
+                                            {tasks.length === 0 ? (
+                                                <Typography variant="body2" color="text.secondary">
+                                                    No tasks yet.
+                                                </Typography>
+                                            ) : (
+                                                <>
+                                                    <List dense>
+                                                        {tasks.map((task) => (
+                                                            <ListItem key={task._id}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={task.completed}
+                                                                    onChange={async () => {
+                                                                        const res = await axios.put(
+                                                                            `/api/tasks/${task._id}`,
+                                                                            { completed: !task.completed },
+                                                                            { headers: authHeaders() }
+                                                                        );
+                                                                        setTasks(tasks.map(t => t._id === task._id ? res.data : t));
+                                                                    }}
+                                                                    style={{ marginRight: "10px" }}
+                                                                />
+                                                                <ListItemText
+                                                                    primary={task.description}
+                                                                    style={{
+                                                                        textDecoration: task.completed ? "line-through" : "none"
+                                                                    }}
+                                                                />
+                                                            </ListItem>
                                                         ))}
-                                                    </tbody>
-                                                </table>
-                                            </Box>
-                                        </>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </Box>
-                    </>
+                                                    </List>
+
+                                                    {/* ✅ One Done button below all steps */}
+                                                    <Button
+                                                        variant="contained"
+                                                        color="success"
+                                                        fullWidth
+                                                        sx={{ mt: 2, borderRadius: "8px" }}
+                                                        disabled={!allCompleted}
+                                                        onClick={handleDoneAll}
+                                                    >
+                                                        Done
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </CardContent>
+
+                                    </Card>
+                                </Grid>
+                            </>
+                        )}
+
+                        {viewMode === "advanced" && (
+                            <Grid item xs={12}>
+                                <ProjectFileExplorer onNewInsight={(insight) => setInsights([insight, ...insights])} />
+                            </Grid>
+                        )}
+                    </Grid>
                 )}
+
+                {/* ✅ Insight Logs always visible */}
+                <Box mt={6} flexGrow={1} display="flex" flexDirection="column" justifyContent="flex-end">
+                    <Card sx={{ minHeight: "45vh", display: "flex", flexDirection: "column", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+                        <CardContent sx={{ flexGrow: 1 }}>
+                            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                                <Typography variant="h6">📝 Insight Logs</Typography>
+                                <Box display="flex" gap={1}>
+                                    <Button
+                                        onClick={handleAnalyzeInsights}
+                                        variant="contained"
+                                        disabled={analyzingInsights || insights.length === 0}
+                                        sx={{ borderRadius: "6px", backgroundColor: "#3949ab" }}
+                                    >
+                                        {analyzingInsights ? "Analyzing…" : "AI Analyze"}
+                                    </Button>
+                                </Box>
+                            </Box>
+
+                            {viewMode === "basic" ? (
+                                <Box sx={{ overflowY: "auto", maxHeight: "30vh" }}>
+                                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                        <thead>
+                                            <tr>
+                                                <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>📅 Date</th>
+                                                <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>🧠 Insight Summary</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {insights.map((log, index) => (
+                                                <tr key={index}>
+                                                    <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>{log.date}</td>
+                                                    <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>{log.summary}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </Box>
+                            ) : (
+                                <>
+                                    <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+                                        <TextField
+                                            type="text"
+                                            placeholder="Enter new insight summary..."
+                                            value={newInsight}
+                                            onChange={(e) => setNewInsight(e.target.value)}
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{ flex: 1 }}
+                                        />
+                                        <Button onClick={handleAddInsight} variant="contained" sx={{ borderRadius: "6px", backgroundColor: "#00796b" }}>
+                                            Add
+                                        </Button>
+                                    </Box>
+
+                                    <Box sx={{ overflowY: "auto", maxHeight: "25vh" }}>
+                                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                            <thead>
+                                                <tr>
+                                                    <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>📅 Date</th>
+                                                    <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>🧠 Insight Summary</th>
+                                                    <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>⚙️ Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {insights.map((log, index) => (
+                                                    <tr key={index}>
+                                                        <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>{log.date}</td>
+                                                        <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>{log.summary}</td>
+                                                        <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>
+                                                            <Button onClick={() => handleEditInsight(index)} size="small" sx={{ minWidth: "auto", p: "4px", mr: "4px" }}>✏️</Button>
+                                                            <Button onClick={() => handleDeleteInsight(index)} size="small" sx={{ minWidth: "auto", p: "4px" }}>🗑️</Button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </Box>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
+                </Box>
             </Box>
 
-            {/* Snackbar for notifications */}
-            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
-                <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+            {/* Snackbar */}
+            <Snackbar open={snackbarOpen} autoHideDuration={5000} onClose={handleSnackbarClose}>
+                <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: "100%" }}>
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
 
-            {/* Custom Dialog for prompt/alert */}
-            <Dialog open={dialogOpen} onClose={() => handleDialogClose(false)}>
+            {/* Dialog */}
+            <Dialog open={dialogOpen} onClose={() => handleDialogClose(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>{dialogTitle}</DialogTitle>
                 <DialogContent>
-                    <DialogContentText>
-                        {dialogContent}
-                    </DialogContentText>
+                    {dialogTitle.includes("AI Manager Next Steps") && typeof dialogContent === "object" ? (
+                        <Box>
+                            {/* Summary */}
+                            <Typography variant="body1" sx={{ mb: 2 }}>
+                                {dialogContent.summary}
+                            </Typography>
+
+                            {/* Risks */}
+                            {dialogContent.risks?.length > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="subtitle1">⚠️ Risks:</Typography>
+                                    <List dense>
+                                        {dialogContent.risks.map((risk, idx) => (
+                                            <ListItem key={idx}>
+                                                <ListItemText primary={risk} />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                </Box>
+                            )}
+
+                            {/* Next Steps */}
+                            {dialogContent.nextSteps?.length > 0 && (
+                                <Box>
+                                    <Typography variant="subtitle1">📌 Next Steps:</Typography>
+                                    <List dense>
+                                        {dialogContent.nextSteps.map((step, idx) => (
+                                            <ListItem key={idx}>
+                                                <ListItemText primary={step} />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                    <Button
+                                        variant="contained"
+                                        sx={{ mt: 2, backgroundColor: "#00796b" }}
+                                        onClick={async () => {
+                                            try {
+                                                const res = await axios.post(
+                                                    "/api/tasks/bulk",
+                                                    { tasks: dialogContent.nextSteps },
+                                                    { headers: authHeaders() }
+                                                );
+                                                setTasks([...tasks, ...res.data]);
+
+                                                // ✅ Clear insights in DB and local state
+                                                await axios.delete("/api/insights/all", { headers: authHeaders() });
+                                                setInsights([]);
+                                                setSnackbarMessage("Tasks applied to TODO list!");
+                                                setSnackbarSeverity("success");
+                                                setSnackbarOpen(true);
+                                                handleDialogClose(true); // close dialog after applying
+                                            } catch (err) {
+                                                console.error("Apply tasks error:", err.response?.data || err.message);
+                                                setSnackbarMessage("Failed to apply tasks");
+                                                setSnackbarSeverity("error");
+                                                setSnackbarOpen(true);
+                                            }
+                                        }}
+                                    >
+                                        Apply to TODO List
+                                    </Button>
+
+                                </Box>
+                            )}
+                        </Box>
+                    ) : (
+                        <DialogContentText component="div" sx={{ whiteSpace: "pre-wrap" }}>
+                            {typeof dialogContent === "string" ? dialogContent : JSON.stringify(dialogContent, null, 2)}
+                        </DialogContentText>
+                    )}
+
+
                     {isPrompt && (
                         <TextField
                             autoFocus
                             margin="normal"
-                            id="dialog-input"
                             label="Insight Summary"
                             multiline
                             rows={6}
@@ -584,37 +625,27 @@ const Dashboard = () => {
                             sx={{ minWidth: "500px" }}
                         />
                     )}
-
                 </DialogContent>
+
+
+
                 <DialogActions>
                     {dialogCallback ? (
-                        // If there's a callback (confirm or prompt), show Cancel + Confirm button
                         <>
-                            <Button onClick={() => handleDialogClose(false)}>
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={() => handleDialogClose(true)}
-                                color="error"
-                            >
-                                {isPrompt ? 'OK' : 'Delete'}
-                            </Button>
+                            <Button onClick={() => handleDialogClose(false)}>Cancel</Button>
+                            <Button onClick={() => handleDialogClose(true)} color="error">{isPrompt ? "OK" : "Delete"}</Button>
                         </>
                     ) : (
-                        // If no callback (simple alert), show single Close button
-                        <Button onClick={() => handleDialogClose(true)}>
-                            Close
-                        </Button>
+                        <Button onClick={() => handleDialogClose(true)}>Close</Button>
                     )}
                 </DialogActions>
-
             </Dialog>
         </MainLayout>
     );
 };
 
 const StatCard = ({ title, value }) => (
-    <Card sx={{ padding: 2, borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", height: "100%" }}>
+    <Card sx={{ p: 2, borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", height: "100%" }}>
         <CardContent>
             <Typography variant="h4" fontWeight="bold">{value}</Typography>
             <Typography variant="subtitle1" color="text.secondary">{title}</Typography>

@@ -241,7 +241,7 @@ const SimpleTable = ({ rows, maxHeight = 140 }) => {
 
 /* -------------------- Main component -------------------- */
 
-export default function ProjectFileExplorer() {
+export default function ProjectFileExplorer({ onNewInsight }) {
     const [projects, setProjects] = useState([]);
     const [projectId, setProjectId] = useState("");
     const [loadingProjects, setLoadingProjects] = useState(false);
@@ -387,51 +387,35 @@ export default function ProjectFileExplorer() {
                                         <Box sx={{ flex: 1, minHeight: 0 }}>
                                             {hasTable && <SimpleTable rows={doc.table} />}
 
-                                            {/* Updates & Risks */}
-                                            <Grid container spacing={2}>
-                                                <Grid item xs={12} md={7}>
-                                                    <Typography variant="subtitle2" gutterBottom>
-                                                        Updates
-                                                    </Typography>
-                                                    {(doc.updates || []).length === 0 ? (
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            None.
-                                                        </Typography>
-                                                    ) : (
-                                                        <ul style={{ margin: 0, paddingInlineStart: 18 }}>
-                                                            {doc.updates.map((u, i) => (
-                                                                <li key={i}>
-                                                                    <Typography variant="body2">{u}</Typography>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
+                                            {/* Updates & Risks (stacked) */}
+                                            <Box sx={{ mt: 2 }}>
+                                                <Typography variant="subtitle2" gutterBottom>
+                                                    Updates
+                                                </Typography>
+                                                {(doc.updates || []).length === 0 ? (
+                                                    <Typography variant="body2" color="text.secondary">None.</Typography>
+                                                ) : (
+                                                    <ul style={{ margin: 0, paddingInlineStart: 18 }}>
+                                                        {doc.updates.map((u, i) => (
+                                                            <li key={i}><Typography variant="body2">{u}</Typography></li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+
+                                                <Typography variant="subtitle2" sx={{ mt: 2 }} gutterBottom>
+                                                    Risks
+                                                </Typography>
+                                                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                                                    {(doc.risks || []).length === 0 && (
+                                                        <Typography variant="body2" color="text.secondary">None.</Typography>
                                                     )}
-                                                </Grid>
-                                                <Grid item xs={12} md={5}>
-                                                    <Typography variant="subtitle2" gutterBottom>
-                                                        Risks
-                                                    </Typography>
-                                                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                                                        {(doc.risks || []).length === 0 && (
-                                                            <Typography variant="body2" color="text.secondary">
-                                                                None.
-                                                            </Typography>
-                                                        )}
-                                                        {(doc.risks || []).map((r, i) => {
-                                                            const rc = riskChip(r);
-                                                            return (
-                                                                <Chip
-                                                                    key={i}
-                                                                    label={rc.label}
-                                                                    color={rc.color}
-                                                                    size="small"
-                                                                    variant="outlined"
-                                                                />
-                                                            );
-                                                        })}
-                                                    </Box>
-                                                </Grid>
-                                            </Grid>
+                                                    {(doc.risks || []).map((r, i) => {
+                                                        const rc = riskChip(r);
+                                                        return <Chip key={i} label={rc.label} color={rc.color} size="small" variant="outlined" />;
+                                                    })}
+                                                </Box>
+                                            </Box>
+
 
                                             {doc.insight && (
                                                 <Alert severity="info" sx={{ mt: 1 }}>
@@ -446,20 +430,31 @@ export default function ProjectFileExplorer() {
                                                         variant="outlined"
                                                         onClick={async () => {
                                                             try {
-                                                                const today = new Date().toLocaleDateString("en-GB"); // dd/mm/yyyy
-                                                                await axios.post("/api/insights", {
-                                                                    date: today,
-                                                                    summary: doc.insight,
-                                                                });
+                                                                const today = new Date().toLocaleDateString("en-GB");
+                                                                const res = await axios.post(
+                                                                    "/api/insights",
+                                                                    { date: today, summary: doc.insight },
+                                                                    {
+                                                                        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                                                                    }
+                                                                );
+
+                                                                // ✅ Immediately push into parent log
+                                                                if (typeof onNewInsight === "function") {
+                                                                    onNewInsight(res.data);
+                                                                }
+
                                                                 alert("✅ Insight saved to log!");
                                                             } catch (err) {
-                                                                console.error(err);
+                                                                console.error("❌ Failed to save insight", err);
                                                                 alert("❌ Failed to save insight");
                                                             }
                                                         }}
                                                     >
                                                         ➕ Add to Insight Log
                                                     </Button>
+
+
                                                 </Alert>
                                             )}
 
@@ -503,37 +498,35 @@ export default function ProjectFileExplorer() {
                                     <Box sx={{ flex: 1, minHeight: 0 }}>
                                         {hasTable && <SimpleTable rows={doc.table} />}
 
-                                        {/* Updates & Risks */}
-                                        <Grid container spacing={2}>
-                                            <Grid item xs={12} md={7}>
-                                                <Typography variant="subtitle2" gutterBottom>
-                                                    Updates
-                                                </Typography>
-                                                {(doc.updates || []).length === 0 ? (
+                                        {/* Updates & Risks (stacked) */}
+                                        <Box sx={{ mt: 2 }}>
+                                            <Typography variant="subtitle2" gutterBottom>
+                                                Updates
+                                            </Typography>
+                                            {(doc.updates || []).length === 0 ? (
+                                                <Typography variant="body2" color="text.secondary">None.</Typography>
+                                            ) : (
+                                                <ul style={{ margin: 0, paddingInlineStart: 18 }}>
+                                                    {doc.updates.map((u, i) => (
+                                                        <li key={i}><Typography variant="body2">{u}</Typography></li>
+                                                    ))}
+                                                </ul>
+                                            )}
+
+                                            <Typography variant="subtitle2" sx={{ mt: 2 }} gutterBottom>
+                                                Risks
+                                            </Typography>
+                                            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                                                {(doc.risks || []).length === 0 && (
                                                     <Typography variant="body2" color="text.secondary">None.</Typography>
-                                                ) : (
-                                                    <ul style={{ margin: 0, paddingInlineStart: 18 }}>
-                                                        {doc.updates.map((u, i) => (
-                                                            <li key={i}><Typography variant="body2">{u}</Typography></li>
-                                                        ))}
-                                                    </ul>
                                                 )}
-                                            </Grid>
-                                            <Grid item xs={12} md={5}>
-                                                <Typography variant="subtitle2" gutterBottom>
-                                                    Risks
-                                                </Typography>
-                                                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                                                    {(doc.risks || []).length === 0 && (
-                                                        <Typography variant="body2" color="text.secondary">None.</Typography>
-                                                    )}
-                                                    {(doc.risks || []).map((r, i) => {
-                                                        const rc = riskChip(r);
-                                                        return <Chip key={i} label={rc.label} color={rc.color} size="small" variant="outlined" />;
-                                                    })}
-                                                </Box>
-                                            </Grid>
-                                        </Grid>
+                                                {(doc.risks || []).map((r, i) => {
+                                                    const rc = riskChip(r);
+                                                    return <Chip key={i} label={rc.label} color={rc.color} size="small" variant="outlined" />;
+                                                })}
+                                            </Box>
+                                        </Box>
+
 
                                         {doc.insight && (
                                             <Alert severity="info" sx={{ mt: 1 }}>
@@ -548,14 +541,23 @@ export default function ProjectFileExplorer() {
                                                     variant="outlined"
                                                     onClick={async () => {
                                                         try {
-                                                            const today = new Date().toLocaleDateString("en-GB"); // dd/mm/yyyy
-                                                            await axios.post("/api/insights", {
-                                                                date: today,
-                                                                summary: doc.insight,
-                                                            });
+                                                            const today = new Date().toLocaleDateString("en-GB");
+                                                            const res = await axios.post(
+                                                                "/api/insights",
+                                                                { date: today, summary: doc.insight },
+                                                                {
+                                                                    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                                                                }
+                                                            );
+
+                                                            // ✅ Immediately push into parent log
+                                                            if (typeof onNewInsight === "function") {
+                                                                onNewInsight(res.data);
+                                                            }
+
                                                             alert("✅ Insight saved to log!");
                                                         } catch (err) {
-                                                            console.error(err);
+                                                            console.error("❌ Failed to save insight", err);
                                                             alert("❌ Failed to save insight");
                                                         }
                                                     }}
