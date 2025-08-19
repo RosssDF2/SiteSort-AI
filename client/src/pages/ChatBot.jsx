@@ -29,6 +29,26 @@ import PreviewIcon from "@mui/icons-material/Preview";
 import { Link as RouterLink } from "react-router-dom";
 import axios from "axios";
 
+// Create an axios instance with default config
+const api = axios.create({
+  baseURL: 'http://localhost:3001',
+  withCredentials: true
+});
+
+// Add a request interceptor to include the auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 function ChatBot() {
   const { user } = useContext(UserContext);
   const username = user?.username || user?.email?.split("@")[0] || "Guest";
@@ -571,7 +591,15 @@ function ChatBot() {
 
   // Load chat history, map and sort by newest first
   useEffect(() => {
-    axios.get("/api/chatlog")
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setSnackbarMessage("Please log in to view your chat history");
+      setSnackbarSeverity("warning");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    api.get("/api/chatlog")
       .then(({ data }) => {
         const loaded = data.map((c) => ({
           _id: c._id,
@@ -580,12 +608,56 @@ function ChatBot() {
             { sender: "user", text: c.prompt },
             { sender: "ai", text: c.response }
           ],
-          createdAt: c.createdAt || new Date().toISOString()
+          createdAt: c.createdAt || new Date().toISOString(),
+          user: c.user // Keep track of the user ID
         })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setHistory(loaded);
       })
       .catch((err) => {
         console.error("Failed to load chat history:", err);
+        setSnackbarMessage("Failed to load chat history");
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
+      });
+  }, []);
+
+  // Set up authentication headers for all requests
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
+  }, []);
+
+  // Load chat history
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setSnackbarMessage("Please log in to view your chat history");
+      setSnackbarSeverity("warning");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    api.get("/api/chatlog")
+      .then(({ data }) => {
+        const loaded = data.map((c) => ({
+          _id: c._id,
+          title: c.title || c.prompt?.slice(0, 20),
+          messages: c.messages || [
+            { sender: "user", text: c.prompt },
+            { sender: "ai", text: c.response }
+          ],
+          createdAt: c.createdAt || new Date().toISOString(),
+          user: c.user
+        })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setHistory(loaded);
+      })
+      .catch((err) => {
+        console.error("Failed to load chat history:", err);
+        setSnackbarMessage("Failed to load chat history");
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
       });
   }, []);
 
@@ -608,19 +680,38 @@ function ChatBot() {
       console.error("⛔ Chat not found or missing _id:", chat);
       return;
     }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setSnackbarMessage("You must be logged in to delete chats");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
     const confirmed = window.confirm("Delete this chat permanently?");
     if (!confirmed) return;
+    
     try {
-      await axios.delete(`/api/chatlog/${chat._id}`);
+      await api.delete(`/api/chatlog/${chat._id}`);
+      
       const updated = [...history];
       updated.splice(index, 1);
       setHistory(updated);
+      
       if (activeIndex === index) {
         setMessages([]);
         setActiveIndex(null);
       }
+
+      setSnackbarMessage("Chat deleted successfully");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
     } catch (err) {
       console.error("❌ Failed to delete:", err.response?.data || err.message);
+      setSnackbarMessage(err.response?.data?.error || "Failed to delete chat");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
     }
   };
 
@@ -633,6 +724,15 @@ function ChatBot() {
   const sendMessage = async (text, fileContext = null) => {
     if (!text.trim()) return;
     console.log("🚀 Starting sendMessage with:", text);
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setSnackbarMessage("You must be logged in to send messages");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
     const userMsg = { 
       sender: "user", 
       text,
@@ -645,7 +745,7 @@ function ChatBot() {
     setInput("");
 
     try {
-      let endpoint = "http://localhost:3001/api/chat/chat";
+      let endpoint = "/api/chat/chat";
       let payload = { prompt: text };
 
       // Use attached files if available, or provided fileContext
@@ -655,11 +755,11 @@ function ChatBot() {
       })) : null);
 
       if (filesToUse && filesToUse.length > 0) {
-        endpoint = "http://localhost:3001/api/chat/chat-with-files";
+        endpoint = "/api/chat/chat-with-files";
         payload.files = filesToUse;
       }
 
-      const { data } = await axios.post(endpoint, payload, { withCredentials: true });
+      const { data } = await api.post(endpoint, payload);
 
       console.log("🤖 Received AI response:", data);
       const aiMsg = { 
@@ -690,14 +790,13 @@ function ChatBot() {
       
       if (activeIndex === null) {
         // Creating new chat
-        const { data } = await axios.post(
-          "http://localhost:3001/api/chatlog",
+        const { data } = await api.post(
+          "/api/chatlog",
           {
             title: updated[0]?.text.slice(0, 20) || "New Chat",
             messages: final,
             createdAt: new Date().toISOString()
-          },
-          { withCredentials: true }
+          }
         );
         savedChat = data;
         newHist.unshift({ _id: savedChat._id, title: savedChat.title, messages: final, createdAt: savedChat.createdAt });
@@ -705,13 +804,12 @@ function ChatBot() {
       } else {
         // Updating existing chat
         const existingChatId = history[activeIndex]._id;
-        const { data } = await axios.put(
-          `http://localhost:3001/api/chatlog/${existingChatId}/messages`,
+        const { data } = await api.put(
+          `/api/chatlog/${existingChatId}/messages`,
           {
             title: history[activeIndex].title, // Keep existing title
             messages: final
-          },
-          { withCredentials: true }
+          }
         );
         savedChat = data;
         newHist[activeIndex] = { _id: savedChat._id, title: savedChat.title, messages: final, createdAt: savedChat.createdAt };
@@ -735,15 +833,29 @@ function ChatBot() {
   // Handle saving AI message as summary or report
   const handleSave = async (type) => {
     console.log("💾 Attempting to save message...", { type, lastAIMessageIndex });
-    if (lastAIMessageIndex === null) {
-      console.warn("❌ No message selected for saving");
-      alert("Error: No message selected for saving");
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setSnackbarMessage("You must be logged in to save messages");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
       return;
     }
+
+    if (lastAIMessageIndex === null) {
+      console.warn("❌ No message selected for saving");
+      setSnackbarMessage("No message selected for saving");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+    
     const msg = messages[lastAIMessageIndex];
     if (!msg || msg.sender !== "ai") {
       console.warn("❌ Invalid message for saving:", msg);
-      alert("Error: Invalid message for saving");
+      setSnackbarMessage("Invalid message for saving");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
       return;
     }
 
@@ -753,10 +865,16 @@ function ChatBot() {
         content: msg.text,
         chatId: history[activeIndex]?._id || null,
         timestamp: new Date().toISOString()
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       console.log("✅ Save successful:", response.data);
 
-      alert(`Successfully saved as ${type}!`);
+      setSnackbarMessage(`Successfully saved as ${type}!`);
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
       setSaveDialogOpen(false);
       setLastAIMessageIndex(null);
     } catch (err) {

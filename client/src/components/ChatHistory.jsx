@@ -17,7 +17,7 @@ import {
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import AddIcon from "@mui/icons-material/Add";
-import axios from "axios";
+import http from "../http";
 
 function ChatHistory({ history, onSelect, onNewChat, onDeleteChat, onUpdateHistory, activeIndex, formatDate }) {
   const [search, setSearch] = useState("");
@@ -85,7 +85,7 @@ function ChatHistory({ history, onSelect, onNewChat, onDeleteChat, onUpdateHisto
     }
 
     try {
-      const { data: updatedChat } = await axios.put(`/api/chatlog/${chat._id}`, {
+      const { data: updatedChat } = await http.put(`/chatlog/${chat._id}`, {
         title: editText
       });
 

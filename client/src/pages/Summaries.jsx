@@ -19,7 +19,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import http from "../http";
 
 const groupByDate = (items) => {
   const options = { day: "numeric", month: "short", year: "numeric" };
@@ -39,7 +39,7 @@ function Summaries() {
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get("/api/summaries", { withCredentials: true });
+      const { data } = await http.get("/summaries");
       setSummaries(data || []);
     } catch (err) {
       console.error("Failed to load summaries", err);

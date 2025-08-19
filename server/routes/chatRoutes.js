@@ -1,6 +1,6 @@
 const express = require("express");
 const dotenv = require("dotenv");
-
+const auth = require("../middlewares/authMiddleware");
 const axios = require("axios");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() }); // or diskStorage if preferred
@@ -12,6 +12,9 @@ const path = require('path');
 
 dotenv.config();
 const router = express.Router();
+
+// Apply auth middleware to all routes
+router.use(auth);
 
 router.post("/upload-summarize", upload.single("file"), (req, res, next) => {
   console.log("📥 File received:", req.file?.originalname);
