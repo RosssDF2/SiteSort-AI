@@ -39,6 +39,21 @@ router.put("/chatlog/:id", async (req, res) => {
   }
 });
 
+// PUT update entire chat log (messages and title)
+router.put("/chatlog/:id/messages", async (req, res) => {
+  try {
+    const { title, messages } = req.body;
+    const updated = await ChatLog.findByIdAndUpdate(
+      req.params.id,
+      { title, messages, updatedAt: new Date() },
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: "Failed to update chat log" });
+  }
+});
+
 // DELETE chat log
 router.delete("/chatlog/:id", async (req, res) => {
   try {

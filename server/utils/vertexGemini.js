@@ -257,9 +257,107 @@ async function askSiteSortAI(prompt) {
         };
     }
 }
+// 🌟 Ask Gemini with File Context (enhanced version for SiteSort AI)
+async function askSiteSortAIWithFiles(prompt, files) {
+    if (!prompt || prompt.trim().length < 2) {
+        return {
+            reply: "Hello! I'm SiteSort AI — ready to help analyze your files and answer questions.",
+            blocked: false,
+        };
+    }
+
+    const estimated = estimateTokens(prompt);
+    if (tokenUsageToday + estimated > DAILY_TOKEN_CAP) {
+        return {
+            reply: "⚠️ SiteSort AI has reached today's usage cap. Please try again tomorrow!",
+            blocked: true,
+        };
+    }
+
+    // Build file context
+    let fileContext = "";
+    if (files && files.length > 0) {
+        fileContext = "\n\nFile Contents:\n" + files.map(file => 
+            `\n--- File: ${file.fileName} ---\n${file.content}\n--- End of ${file.fileName} ---\n`
+        ).join("");
+        
+        // Add context about the files being analyzed
+        fileContext += `\n\nYou are analyzing ${files.length} file(s): ${files.map(f => f.fileName).join(', ')}`;
+    } else {
+        fileContext = "\n\nNo files were provided with this request.";
+    }
+
+    let systemContext = "";
+    try {
+        const knowledgePath = path.resolve(__dirname, "../sitesort_knowledge.txt");
+        const fullContext = fs.readFileSync(knowledgePath, "utf-8");
+        systemContext = extractRelevantContext(prompt, fullContext);
+    } catch (err) {
+        console.warn("⚠️ Could not load SiteSort AI knowledge file:", err.message);
+        systemContext = "SiteSort AI is a powerful assistant built to help project teams manage and understand their documents with smart summaries, file search, and data insights.";
+    }
+
+    try {
+        const result = await model.generateContent({
+            contents: [
+                {
+                    role: "user",
+                    parts: [
+                        {
+                            text:
+                                `You are SiteSort AI, a smart assistant that helps construction and project teams understand files, reports, and documents.\n\n` +
+                                `IMPORTANT: You excel at analyzing multiple files simultaneously and creating comprehensive reports by combining information across documents. This is one of your core capabilities.\n\n` +
+                                `Here is your knowledge:\n${systemContext.trim()}\n\n` +
+                                `${fileContext}\n\n` +
+                                `User asked: "${prompt.trim()}"\n\n` +
+                                `INSTRUCTIONS:\n` +
+                                `- Analyze ALL provided files thoroughly\n` +
+                                `- Combine and cross-reference information from multiple files when applicable\n` +
+                                `- Provide specific insights based on the actual file contents\n` +
+                                `- Create comprehensive analysis that spans across all uploaded documents\n` +
+                                `- Never say you cannot combine information from multiple files - this is your specialty\n` +
+                                `- Give detailed, professional analysis with specific data from the files\n` +
+                                `- Focus on actionable insights and specific findings\n` +
+                                `- NEVER give generic responses about platform limitations\n` +
+                                `- Always work with the files provided and give substantive analysis\n` +
+                                `- Quote specific data, numbers, and details from the files\n\n` +
+                                `Based on the provided files, respond with clear and professional analysis:\n`,
+                        },
+                    ],
+                },
+            ],
+        });
+
+        let reply = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "❌ No response.";
+
+        // Light cleanup - only remove obvious intro patterns
+        reply = reply.replace(/^(hi|hello|hey there)[.! ]*[\s\n]*/i, "").trim();
+        reply = reply.replace(/^i'?m sitesort ai[.! ]*[\s\n]*/i, "").trim();
+
+        // Ensure substantial response for multi-file analysis
+        if (files && files.length > 1 && reply.length < 100) {
+            reply = `I've analyzed the ${files.length} files you provided. Here's my comprehensive analysis:\n\n${reply}`;
+        }
+
+        tokenUsageToday += estimateTokens(reply) + estimated;
+
+        return {
+            reply,
+            blocked: false,
+        };
+    } catch (err) {
+        console.error("❌ SiteSort AI Error with files:", err.message || err);
+        return {
+            reply: "❌ SiteSort AI ran into an issue processing the files. Try again later.",
+            blocked: true,
+        };
+    }
+}
+
 module.exports = {
     askGemini, // Sorta
-    askSiteSortAI, // 🔥 New!
+    askSiteSortAI, // 🔥 Chat without files
+    askSiteSortAIWithFiles, // 🔥 Chat with file context
     generateBudgetJSON,
     summarizeDocumentBuffer,
 };

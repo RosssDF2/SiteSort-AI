@@ -27,6 +27,7 @@ const driveRoutes = require("./routes/driveRoutes");
 const debugRoutes = require("./routes/debugRoutes");
 const summaryRoutes = require("./routes/summaries");
 const reportRoutes = require("./routes/reports");
+const pdfRoutes = require("./routes/pdfRoutes");
 
 
 // 🆕 You will re-add /api/drive once your OAuth drive route is implemented
@@ -72,6 +73,7 @@ app.use("/api/drive", driveRoutes);
 app.use("/api", debugRoutes);
 app.use("/api/summaries", summaryRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/pdf", pdfRoutes);
 
 
 // ✅ Default route
