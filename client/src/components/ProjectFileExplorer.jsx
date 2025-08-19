@@ -297,53 +297,60 @@ export default function ProjectFileExplorer({ onNewInsight }) {
     return (
         <Box>
             {/* Controls */}
-            <Card sx={{ borderRadius: 3, mb: 2 }}>
-                <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                        📁 Project File Explorer (AI)
-                    </Typography>
-
-                    {error && (
-                        <Alert severity="error" sx={{ mb: 2 }}>
-                            {error}
-                        </Alert>
-                    )}
-
-                    <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} md={6}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel id="proj-label">Project</InputLabel>
-                                <Select
-                                    labelId="proj-label"
-                                    label="Project"
-                                    value={projectId}
-                                    onChange={(e) => setProjectId(e.target.value)}
-                                    disabled={loadingProjects}
-                                >
-                                    {projects.map((p) => (
-                                        <MenuItem key={p.id} value={p.id}>
-                                            {p.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+            <Box sx={{ maxWidth: 600 }}>
+                <Card sx={{ borderRadius: 3, mb: 2 }}>
+                    <CardContent
+                        sx={{
+                            height: 120,
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "center",
+                            overflow: "hidden",
+                        }}
+                    >
+                        <Typography variant="h6" gutterBottom>
+                            📁 Project File Explorer (AI)
+                        </Typography>
+                        {error && (
+                            <Alert severity="error" sx={{ mb: 2 }}>
+                                {error}
+                            </Alert>
+                        )}
+                        <Grid container spacing={2} alignItems="center">
+                            <Grid item xs={12} md={6}>
+                                <FormControl fullWidth size="small" sx={{ minWidth: 250 }}>
+                                    <InputLabel id="proj-label" shrink>Project</InputLabel>
+                                    <Select
+                                        labelId="proj-label"
+                                        label="Project"
+                                        value={projectId}
+                                        onChange={(e) => setProjectId(e.target.value)}
+                                        disabled={loadingProjects}
+                                        sx={{ minWidth: 250 }}
+                                    >
+                                        {projects.map((p) => (
+                                            <MenuItem key={p.id} value={p.id}>
+                                                {p.name}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12} md="auto">
+                                <Button variant="contained" onClick={analyze} disabled={!projectId || analyzing}>
+                                    {analyzing ? "Analyzing..." : "Analyze"}
+                                </Button>
+                            </Grid>
                         </Grid>
-
-                        <Grid item xs={12} md="auto">
-                            <Button variant="contained" onClick={analyze} disabled={!projectId || analyzing}>
-                                {analyzing ? "Analyzing..." : "Analyze"}
-                            </Button>
-                        </Grid>
-                    </Grid>
-
-                    {loadingProjects && (
-                        <Box sx={{ display: "flex", gap: 1, mt: 2, alignItems: "center" }}>
-                            <CircularProgress size={18} />
-                            <Typography variant="body2">Loading projects…</Typography>
-                        </Box>
-                    )}
-                </CardContent>
-            </Card>
+                        {loadingProjects && (
+                            <Box sx={{ display: "flex", gap: 1, mt: 2, alignItems: "center" }}>
+                                <CircularProgress size={18} />
+                                <Typography variant="body2">Loading projects…</Typography>
+                            </Box>
+                        )}
+                    </CardContent>
+                </Card>
+            </Box>
 
             {/* Results */}
             {analyzing && (
@@ -359,7 +366,7 @@ export default function ProjectFileExplorer({ onNewInsight }) {
                 </Typography>
             )}
 
-            <Grid container spacing={2} alignItems="stretch">
+            <Grid container spacing={1} alignItems="stretch">
                 {/* Budget → full width */}
                 {sortedDocs.find((d) => (d.category || "").toLowerCase() === "budget") && (
                     <Grid item xs={12} md={12} sx={{ width: "63%" }}>
@@ -474,7 +481,6 @@ export default function ProjectFileExplorer({ onNewInsight }) {
                         return cat !== "budget" && cat !== "rfi" && cat !== "rfq";
                     })
                     .map((doc, idx) => {
-
                         const cat = (doc.category || "Unknown").toLowerCase();
                         const hasTable = Array.isArray(doc.table) && doc.table.length > 1;
 
@@ -482,14 +488,13 @@ export default function ProjectFileExplorer({ onNewInsight }) {
                             <Grid
                                 item
                                 xs={12}
-                                md={cat === "site report" ? 12 : 6}
+                                md={6} // Make both cards use half width
                                 key={`${doc.fileName}-${idx}`}
-                                sx={{ display: "flex", width: cat === "site report" ? "60%" : "auto" }}
+                                sx={{ display: "flex" }} // Remove width: "60%" or similar
                             >
                                 <DashboardCard
                                     title={doc.fileName}
                                     subtitle={doc.category || "Unknown"}
-                                    sx={cat === "site report" ? { width: "100%" } : {}}
                                 >
                                     <Box sx={{ flex: 0 }}>
                                         {cat === "resources" && hasTable && <ResourcesBar rows={doc.table} />}

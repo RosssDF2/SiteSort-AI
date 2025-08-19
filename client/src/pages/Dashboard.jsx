@@ -264,27 +264,29 @@ const Dashboard = () => {
                     Interactive Dashboard
                 </Typography>
 
-                {/* NEW: Project picker (drives BASIC). Hidden in Advanced if you want; I keep it visible always. */}
-                <Box sx={{ mb: 2, display: "flex", gap: 2, alignItems: "center" }}>
-                    <Typography variant="subtitle1">Project:</Typography>
-                    <Select
-                        size="small"
-                        value={selectedProjectId}
-                        onChange={(e) => setSelectedProjectId(e.target.value)}
-                        displayEmpty
-                        sx={{ minWidth: 260 }}
-                    >
-                        <MenuItem value="">
-                            <em>Select a project…</em>
-                        </MenuItem>
-                        {projects.map((p) => (
-                            <MenuItem key={p.id} value={p.id}>
-                                {p.name || p.title || p.id}
+                {/* NEW: Project picker (drives BASIC). Only visible in Basic mode */}
+                {viewMode === "basic" && (
+                    <Box sx={{ mb: 2, display: "flex", gap: 2, alignItems: "center" }}>
+                        <Typography variant="subtitle1">Project:</Typography>
+                        <Select
+                            size="small"
+                            value={selectedProjectId}
+                            onChange={(e) => setSelectedProjectId(e.target.value)}
+                            displayEmpty
+                            sx={{ minWidth: 260 }}
+                        >
+                            <MenuItem value="">
+                                <em>Select a project…</em>
                             </MenuItem>
-                        ))}
+                            {projects.map((p) => (
+                                <MenuItem key={p.id} value={p.id}>
+                                    {p.name || p.title || p.id}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </Box>
+                )}
 
-                    </Select>
-                </Box>
 
                 {/* Removed old search/type/apply strip entirely (and thus also in Advanced) */}
 
@@ -451,23 +453,22 @@ const Dashboard = () => {
                                         p: 2,
                                         borderRadius: "12px",
                                         boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                                        height: 300, // same height
+                                        height: 300,
                                         display: "flex",
                                         flexDirection: "column",
                                     }}
                                 >
-                                    <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                                    <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column", p: 0 }}>
                                         <Typography variant="h6" gutterBottom>
                                             ✅ TODO List
                                         </Typography>
-
                                         {tasks.length === 0 ? (
                                             <Typography variant="body2" color="text.secondary">
                                                 No tasks yet.
                                             </Typography>
                                         ) : (
                                             <>
-                                                <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
+                                                <Box sx={{ flexGrow: 1, overflowY: "auto", maxHeight: 180, mb: 2 }}>
                                                     <List dense>
                                                         {tasks.map((task) => (
                                                             <ListItem key={task._id}>
@@ -496,12 +497,11 @@ const Dashboard = () => {
                                                         ))}
                                                     </List>
                                                 </Box>
-
                                                 <Button
                                                     variant="contained"
                                                     color="success"
                                                     fullWidth
-                                                    sx={{ mt: 2, borderRadius: "8px" }}
+                                                    sx={{ borderRadius: "8px" }}
                                                     disabled={!allCompleted}
                                                     onClick={handleDoneAll}
                                                 >
