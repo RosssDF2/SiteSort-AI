@@ -1477,7 +1477,7 @@ function ChatBot() {
                       loadingFileContent ? "Loading files..." :
                       uploading ? "Processing..." : 
                       attachedFiles.length > 0 ? `Ask about ${attachedFiles.length} attached file(s)...` :
-                      "Type a message or attach files..."
+                      "Type a message..."
                     }
                     variant="standard"
                     value={input}

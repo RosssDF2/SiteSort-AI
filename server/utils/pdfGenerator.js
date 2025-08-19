@@ -57,7 +57,7 @@ async function generateAIReportPDF(reportData) {
     return new Promise((resolve, reject) => {
         try {
             const doc = new PDFDocument({
-                margin: 50,
+                margin: 72, // Increased margin
                 size: 'A4',
                 bufferPages: true
             });
@@ -69,26 +69,31 @@ async function generateAIReportPDF(reportData) {
             // Add logo and header
             const logoPath = path.join(__dirname, '../../client/public/logo.png');
             if (fs.existsSync(logoPath)) {
-                doc.image(logoPath, 50, 50, { width: 40, height: 40 });
+                doc.image(logoPath, 30, 50, { width: 40 }); // Moved logo 20 points to the left
             }
             
             // Title section
             doc.font('Helvetica-Bold')
                .fontSize(24)
                .fillColor('#10B981')
-               .text('SiteSort AI Report', 100, 50)
-               .fontSize(14)
+               .text('SiteSort AI Report', 72, 50);
+            
+            doc.fontSize(14)
                .fillColor('#6B7280')
-               .text(reportData.title || 'AI Analysis Report', 100);
+               .text(reportData.title || 'AI Analysis Report', {
+                   width: 450, // Constrain width
+                   align: 'left'
+               });
 
-            // Timestamp and metadata
-            doc.moveDown()
-               .fontSize(10)
+            // Timestamp
+            doc.fontSize(10)
                .fillColor('#6B7280')
-               .text(`Generated on ${formatDateTime(new Date())}`)
-               .moveDown(0.5);
+               .text(`Generated on ${formatDateTime(new Date())}`, {
+                   width: 450,
+                   align: 'left'
+               });
 
-            // Draw header separator
+            // Simple header separator
             doc.strokeColor('#E5E7EB')
                .lineWidth(1)
                .moveTo(50, 150)
@@ -102,14 +107,20 @@ async function generateAIReportPDF(reportData) {
                 doc.font('Helvetica-Bold')
                    .fontSize(14)
                    .fillColor('#10B981')
-                   .text('Your Question', { continued: false });
+                   .text('Your Question');
 
                 doc.moveDown(0.5);
-                addSection(doc, reportData.userQuery, { 
-                    fontSize: 12,
-                    color: '#374151',
-                    marginBottom: 15 
-                });
+                
+                doc.font('Helvetica')
+                   .fontSize(12)
+                   .fillColor('#374151')
+                   .text(reportData.userQuery, {
+                       width: 450, // Reduced width
+                       align: 'left',
+                       lineGap: 2
+                   });
+
+                doc.moveDown(1);
             }
 
             // Files Analyzed Section
@@ -117,44 +128,50 @@ async function generateAIReportPDF(reportData) {
                 doc.font('Helvetica-Bold')
                    .fontSize(14)
                    .fillColor('#10B981')
-                   .text('Files Analyzed', { continued: false });
+                   .text('Files Analyzed');
 
                 doc.moveDown(0.5);
+                
                 reportData.filesAnalyzed.forEach((file, index) => {
-                    addSection(doc, `${index + 1}. ${file}`, {
-                        fontSize: 11,
-                        color: '#6B7280',
-                        marginBottom: 5
-                    });
+                    doc.font('Helvetica')
+                       .fontSize(11)
+                       .fillColor('#6B7280')
+                       .text(`${index + 1}. ${file}`);
+                    
+                    doc.moveDown(0.3);
                 });
-                doc.moveDown();
+                doc.moveDown(1);
             }
 
             // AI Response Section
             doc.font('Helvetica-Bold')
                .fontSize(14)
                .fillColor('#10B981')
-               .text('Analysis & Response', { continued: false });
+               .text('Analysis & Response');
 
-            doc.moveDown();
+            doc.moveDown(0.5);
 
             // Split and structure AI response
             const sections = cleanAndStructureText(reportData.aiResponse);
             sections.forEach(section => {
                 // Check if section is a header
                 if (section.match(/^[A-Z][^a-z\n:]+:/)) {
-                    addSection(doc, section, {
-                        fontSize: 13,
-                        color: '#10B981',
-                        font: 'Helvetica-Bold',
-                        marginBottom: 5
-                    });
+                    doc.font('Helvetica-Bold')
+                       .fontSize(13)
+                       .fillColor('#10B981')
+                       .text(section);
+                    doc.moveDown(0.5);
                 } else {
-                    addSection(doc, section, {
-                        fontSize: 11,
-                        color: '#374151',
-                        marginBottom: 10
-                    });
+                    doc.font('Helvetica')
+                       .fontSize(11)
+                       .fillColor('#374151')
+                       .text(section, {
+                           width: 450, // Reduced width for better readability
+                           align: 'left',
+                           lineGap: 2,
+                           columns: 1
+                       });
+                    doc.moveDown(0.5);
                 }
             });
 
