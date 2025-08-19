@@ -53,31 +53,57 @@ function Profile() {
   return (
     <MainLayout>
       {/* Welcome Message */}
-      <Box textAlign="center" mb={4}>
+      <Box 
+        textAlign="center" 
+        mb={4} 
+        sx={{
+          py: 3,
+          borderRadius: 2
+        }}
+      >
         <Avatar
           src={user?.avatar ? `http://localhost:3001${user.avatar}` : undefined}
-          sx={{ width: 80, height: 80, mx: 'auto', mb: 2 }}
+          sx={{ 
+            width: 80, 
+            height: 80, 
+            mx: 'auto', 
+            mb: 2,
+            border: '2px solid white',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}
         />
-        <Typography variant="h4" mb={1}>
+        <Typography variant="h4" mb={1} fontWeight="600">
           Welcome, <span style={{ color: '#10B981' }}>{username}</span>
         </Typography>
-        <Typography color="text.secondary">
+        <Typography color="text.secondary" variant="body1" sx={{ maxWidth: 500, mx: 'auto' }}>
           Manage your profile, preferences, and settings to get the most out of your file assistant
         </Typography>
       </Box>
 
       {/* Cards */}
-      <Grid container spacing={3} justifyContent="center">
+      <Grid container spacing={3} justifyContent="center" sx={{ px: { xs: 2, md: 3 } }}>
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 3 }}>
-            <Box display="flex" alignItems="center" gap={1} mb={2}>
-              <LockIcon color="success" />
-              <Typography variant="h6">Password Manager</Typography>
+          <Paper 
+            sx={{ 
+              p: 3, 
+              height: '100%',
+              borderRadius: 2, 
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+              transition: 'transform 0.2s ease-in-out',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: '0 6px 24px rgba(0,0,0,0.12)'
+              }
+            }}
+          >
+            <Box display="flex" alignItems="center" gap={2} mb={2}>
+              <LockIcon color="success" sx={{ fontSize: 24 }} />
+              <Typography variant="h6" fontWeight="600">Password Manager</Typography>
             </Box>
-            <Typography mb={2}>
+            <Typography mb={3} color="text.secondary" variant="body1">
               See, change, or remove passwords you saved in your SiteSort Account.
             </Typography>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Box display="flex" alignItems="center" justifyContent="space-between" mt="auto">
               <Button
                 variant="text"
                 onClick={async () => {
@@ -113,27 +139,61 @@ function Profile() {
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 3 }}>
-            <Box display="flex" alignItems="center" gap={1} mb={2}>
-              <InfoIcon color="primary" />
-              <Typography variant="h6">Personal Info</Typography>
+          <Paper 
+            sx={{ 
+              p: 4, 
+              borderRadius: 4, 
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              transition: 'transform 0.2s ease-in-out',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: '0 6px 24px rgba(0,0,0,0.12)'
+              }
+            }}
+          >
+            <Box display="flex" alignItems="center" gap={2} mb={2}>
+              <InfoIcon color="primary" sx={{ fontSize: 24 }} />
+              <Typography variant="h6" fontWeight="600">Personal Info</Typography>
             </Box>
-            <Typography mb={2}>
+            <Typography mb={3} color="text.secondary" variant="body1">
               Update your name and role so we can personalize your experience.
             </Typography>
-            <Button variant="text" onClick={() => navigate("/personalize")}>
+            <Box sx={{ mt: 'auto' }}>
+              <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={() => navigate("/personalize")}
+              sx={{ 
+                borderRadius: 2,
+                textTransform: 'none',
+                px: 3,
+                py: 1
+              }}
+            >
               Review personal information
             </Button>
+            </Box>
           </Paper>
         </Grid>
 
         <Grid item xs={12}>
-          <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 3 }}>
-            <Box display="flex" alignItems="center" gap={1} mb={2}>
-              <SettingsIcon color="success" />
-              <Typography variant="h6">Security Settings</Typography>
+          <Paper 
+            sx={{ 
+              p: 4, 
+              borderRadius: 4, 
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              transition: 'transform 0.2s ease-in-out',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: '0 6px 24px rgba(0,0,0,0.12)'
+              }
+            }}
+          >
+            <Box display="flex" alignItems="center" gap={2} mb={2}>
+              <SettingsIcon color="success" sx={{ fontSize: 24 }} />
+              <Typography variant="h6" fontWeight="600">Security Settings</Typography>
             </Box>
-            <Typography mb={2}>
+            <Typography mb={3} color="text.secondary" variant="body1">
               {isGoogleLinked
                 ? "Your account is protected with Google login and 2FA. You can unlink your account below."
                 : "Keep your account secure by enabling Google login and 2FA. It only takes a few seconds."}
@@ -146,8 +206,18 @@ function Profile() {
             <Box display="flex" justifyContent="space-between" alignItems="center" gap={2}>
               {!isGoogleLinked ? (
                 <Button
-                  variant="outlined"
+                  variant="contained"
                   startIcon={<GoogleIcon />}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    px: 3,
+                    py: 1.5,
+                    backgroundColor: '#4285F4',
+                    '&:hover': {
+                      backgroundColor: '#3367D6'
+                    }
+                  }}
                   onClick={async () => {
                     const token = localStorage.getItem("token");
                     const res = await fetch("http://localhost:3001/api/auth/bind/initiate", {

@@ -19,8 +19,11 @@ import http from "../http";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../contexts/UserContext";
 import { useLocation } from "react-router-dom";
+import Lottie from "lottie-react";
+import successAnimation from "../assets/animations/success.json";
 
 export default function Login() {
+  const [showAnimation, setShowAnimation] = React.useState(false);
   const { setUser } = React.useContext(UserContext);
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = React.useState("");
@@ -53,7 +56,10 @@ export default function Login() {
             localStorage.setItem("token", token);
             localStorage.setItem("user", JSON.stringify(user));
             setUser(user);
-            navigate("/profile");
+            setShowAnimation(true);
+            setTimeout(() => {
+              navigate("/profile");
+            }, 2000);
           }
         })
         .catch((err) => {
@@ -74,15 +80,36 @@ export default function Login() {
     }
   }, [urlError]);
   return (
-    <Box
-      component="section"
-      sx={{
-        position: "fixed",
-        inset: 0,
-        display: "flex",
-        overflow: "hidden",
-      }}
-    >
+    <>
+      {showAnimation && (
+        <Box
+          sx={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "#FFFFFF",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+        >
+          <Box sx={{ width: "500px", height: "500px" }}>
+            <Lottie animationData={successAnimation} loop={false} style={{ width: '100%', height: '100%' }} />
+          </Box>
+        </Box>
+      )}
+      <Box
+        component="section"
+        sx={{
+          position: "fixed",
+          inset: 0,
+          display: "flex",
+          overflow: "hidden",
+        }}
+      >
       {/* Logo top-left */}
       <Box
         position="absolute"
@@ -248,5 +275,6 @@ export default function Login() {
         </Button>
       </Box>
     </Box>
+    </>
   );
 }
