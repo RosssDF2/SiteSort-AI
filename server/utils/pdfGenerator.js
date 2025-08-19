@@ -67,9 +67,9 @@ async function generateAIReportPDF(reportData) {
             doc.on('end', () => resolve(Buffer.concat(chunks)));
 
             // Add logo and header
-            const logoPath = path.join(__dirname, '../../client/public/sorta-bot.png');
+            const logoPath = path.join(__dirname, '../../client/public/logo.png');
             if (fs.existsSync(logoPath)) {
-                doc.image(logoPath, 50, 50, { width: 40 });
+                doc.image(logoPath, 50, 50, { width: 40, height: 40 });
             }
             
             // Title section
