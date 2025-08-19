@@ -481,12 +481,7 @@ ${docText.slice(0, 2500)}
     }
 }
 
-module.exports = {
-    askGemini, // Sorta
-    askSiteSortAI, // 🔥 Chat without files
-    askSiteSortAIWithFiles, // 🔥 Chat with file context
-    // generateText will be added below
-};
+// Exports moved to end of file
 
 // 🌟 Generic text generator (for AI Manager "Next Steps")
 async function generateText(prompt) {
@@ -551,9 +546,10 @@ ${extractedText.slice(0, 2000)}
 module.exports = {
     askGemini,
     askSiteSortAI,
+    askSiteSortAIWithFiles, // Add this function to exports
     generateBudgetJSON,
     summarizeDocumentBuffer,
     extractStructuredBudget,
-    generateText,        // 👈 added
+    generateText,
     extractRFIorRFQ
 };

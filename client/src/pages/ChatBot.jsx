@@ -89,6 +89,15 @@ function ChatBot() {
     return new Date(dateStr).toLocaleDateString("en-GB", options);
   };
 
+  // Helper: check if message is a summary or report
+  const isSummaryOrReport = (message) => {
+    if (!message) return false;
+    const isAIMessage = message.sender === "ai";
+    const hasSummaryKeywords = message.metadata?.userQuery?.toLowerCase().includes('summary') || 
+                              message.metadata?.userQuery?.toLowerCase().includes('report');
+    return isAIMessage && hasSummaryKeywords;
+  };
+
   // Handle PDF operations with error handling and loading states
   const handlePdfOperation = async (msg, operation = 'download') => {
     try {
@@ -623,8 +632,15 @@ function ChatBot() {
 
   const sendMessage = async (text, fileContext = null) => {
     if (!text.trim()) return;
-    const userMsg = { sender: "user", text };
+    console.log("🚀 Starting sendMessage with:", text);
+    const userMsg = { 
+      sender: "user", 
+      text,
+      timestamp: new Date().toISOString()
+    };
+    console.log("👤 Created user message:", userMsg);
     const updated = [...messages, userMsg];
+    console.log("📝 Updating messages array, new length:", updated.length);
     setMessages(updated);
     setInput("");
 
@@ -645,16 +661,23 @@ function ChatBot() {
 
       const { data } = await axios.post(endpoint, payload, { withCredentials: true });
 
+      console.log("🤖 Received AI response:", data);
       const aiMsg = { 
         sender: "ai", 
         text: data.text || data, // Support both new and old response format
         pdf: data.pdf,
         filename: data.filename,
-        timestamp: data.timestamp,
-        metadata: data.metadata
+        timestamp: data.timestamp || new Date().toISOString(),
+        metadata: {
+          ...(data.metadata || {}),
+          userQuery: text
+        }
       };
+      console.log("📝 Creating AI message object:", aiMsg);
       const final = [...updated, aiMsg];
+      console.log("🔄 Setting messages array, length:", final.length);
       setMessages(final);
+      console.log("💬 Messages updated, opening save dialog...");
 
       // Auto-clear attached files after AI response (if files were used and auto-clear is enabled)
       if (attachedFiles.length > 0 && autoClearFiles) {
@@ -696,9 +719,14 @@ function ChatBot() {
       
       setHistory(newHist);
 
-      // Show popup to save AI response
-      setLastAIMessageIndex(final.length - 1);
+      // Show save dialog for all AI responses
+      console.log("📝 Opening save dialog...");
+      const aiMessageIndex = final.length - 1;
+      console.log("💾 Setting lastAIMessageIndex to:", aiMessageIndex);
+      setLastAIMessageIndex(aiMessageIndex);
+      console.log("🔓 Opening save dialog (setSaveDialogOpen to true)");
       setSaveDialogOpen(true);
+      console.log("✅ Dialog state updates complete");
     } catch (err) {
       console.error("Chat error:", err);
     }
@@ -706,23 +734,34 @@ function ChatBot() {
 
   // Handle saving AI message as summary or report
   const handleSave = async (type) => {
-    if (lastAIMessageIndex === null) return;
+    console.log("💾 Attempting to save message...", { type, lastAIMessageIndex });
+    if (lastAIMessageIndex === null) {
+      console.warn("❌ No message selected for saving");
+      alert("Error: No message selected for saving");
+      return;
+    }
     const msg = messages[lastAIMessageIndex];
-    if (!msg || msg.sender !== "ai") return;
+    if (!msg || msg.sender !== "ai") {
+      console.warn("❌ Invalid message for saving:", msg);
+      alert("Error: Invalid message for saving");
+      return;
+    }
 
     try {
-      await axios.post(`http://localhost:3001/api/${type}`, {
+      console.log("🔄 Sending POST request to save as", type);
+      const response = await axios.post(`http://localhost:3001/api/${type}`, {
         content: msg.text,
         chatId: history[activeIndex]?._id || null,
         timestamp: new Date().toISOString()
       });
+      console.log("✅ Save successful:", response.data);
 
-      alert(`Saved as ${type}!`);
+      alert(`Successfully saved as ${type}!`);
       setSaveDialogOpen(false);
       setLastAIMessageIndex(null);
     } catch (err) {
-      console.error("Failed to save", err);
-      alert("Save failed");
+      console.error("❌ Failed to save:", err);
+      alert(`Error saving as ${type}: ${err.response?.data?.error || err.message}`);
     }
   };
 

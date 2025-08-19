@@ -1,31 +1,82 @@
 const pdfParse = require("pdf-parse");
 
+// Add PDF parsing options
+const PDF_OPTIONS = {
+  // Don't crash on corrupted PDF files
+  throwOnErrors: false,
+  // Max pages to parse (prevent hanging on huge files)
+  max: 100,
+  // Include useful metadata
+  includeXrefs: true,
+  // Try to recover broken cross-references
+  repairXrefDamage: true
+};
+
 exports.extractTextFromPDF = async (buffer) => {
   try {
-    // First attempt: Standard pdf-parse
-    const data = await pdfParse(buffer);
+    // First attempt: Standard pdf-parse with recovery options
+    const data = await pdfParse(buffer, PDF_OPTIONS);
     
     if (data.text && data.text.trim().length > 0) {
       console.log(`✅ PDF text extracted successfully: ${data.text.length} characters`);
       return data.text.trim();
-    } else {
-      console.warn("⚠️ PDF parsed but no text content found");
-      return null;
     }
+    
+    // If no text was found, try a more aggressive parsing approach
+    console.warn("⚠️ First parse attempt yielded no text, trying fallback method...");
+    
+    // Modify options for second attempt
+    const fallbackOptions = {
+      ...PDF_OPTIONS,
+      // Force less strict parsing
+      throwOnErrors: false,
+      // Skip XRef validation
+      skipXrefValidation: true,
+      // Ignore cross-reference tables
+      ignoreXrefs: true
+    };
+    
+    const fallbackData = await pdfParse(buffer, fallbackOptions);
+    
+    if (fallbackData.text && fallbackData.text.trim().length > 0) {
+      console.log(`✅ PDF text extracted successfully (fallback): ${fallbackData.text.length} characters`);
+      return fallbackData.text.trim();
+    }
+    
+    console.warn("⚠️ PDF parsed but no text content found");
+    return null;
+    
   } catch (err) {
     console.error("❌ PDF parsing error:", err.message);
     
     // Try to provide more specific error information
     if (err.message.includes('Invalid PDF')) {
       console.error("❌ PDF appears to be corrupted or invalid");
-      return null;
     } else if (err.message.includes('password')) {
       console.error("❌ PDF is password protected");
-      return null;
-    } else {
-      console.error("❌ Unknown PDF parsing error:", err.message);
-      return null;
+    } else if (err.message.includes('XRef')) {
+      console.error("❌ PDF has damaged cross-reference table");
+      // Try one last time with completely ignored XRefs
+      try {
+        console.log("🔄 Attempting final parse with ignored XRefs...");
+        const lastAttemptOptions = {
+          ...PDF_OPTIONS,
+          ignoreXrefs: true,
+          skipXrefValidation: true,
+          throwOnErrors: false
+        };
+        const lastAttemptData = await pdfParse(buffer, lastAttemptOptions);
+        if (lastAttemptData.text && lastAttemptData.text.trim().length > 0) {
+          console.log("✅ Successfully recovered text from damaged PDF");
+          return lastAttemptData.text.trim();
+        }
+      } catch (finalErr) {
+        console.error("❌ Final recovery attempt failed:", finalErr.message);
+      }
     }
+    
+    console.error("❌ All PDF parsing attempts failed");
+    return null;
   }
 };
 
