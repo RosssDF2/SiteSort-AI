@@ -27,6 +27,8 @@ const driveRoutes = require("./routes/driveRoutes");
 const debugRoutes = require("./routes/debugRoutes");
 const summaryRoutes = require("./routes/summaries");
 const reportRoutes = require("./routes/reports");
+const pdfRoutes = require("./routes/pdfRoutes");
+
 const taskRoutes = require("./routes/taskRoutes");
 
 // 🆕 You will re-add /api/drive once your OAuth drive route is implemented
@@ -36,8 +38,8 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 app.use(express.static("public"));
 
 // ✅ Session & Passport (for Google OAuth)
@@ -72,6 +74,7 @@ app.use("/api/drive", driveRoutes);
 app.use("/api", debugRoutes);
 app.use("/api/summaries", summaryRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/pdf", pdfRoutes);
 app.use("/api/tasks", taskRoutes);
 
 
