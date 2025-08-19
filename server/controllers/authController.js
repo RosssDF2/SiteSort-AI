@@ -16,10 +16,33 @@ exports.loginUser = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ error: "Invalid email or password" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid email or password" });
+    // Brute-force: check if locked
+    if (user.isLocked && (!user.lockUntil || user.lockUntil > Date.now())) {
+      return res.status(403).json({ error: "Account is locked. Please contact admin." });
+    }
 
-    // ✅ 2FA (only for managers with Google linked)
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+      if (user.failedLoginAttempts >= 4) {
+        user.isLocked = true;
+        user.lockUntil = new Date(Date.now() + 24 * 60 * 60 * 1000); // lock for 24h (or until admin unlocks)
+      }
+      await user.save();
+      if (user.isLocked) {
+        return res.status(403).json({ error: "Account is locked. Please contact admin." });
+      } else {
+        return res.status(400).json({ error: "Invalid email or password", remainingAttempts: 4 - user.failedLoginAttempts });
+      }
+    }
+
+    // Reset failed attempts on successful login
+    user.failedLoginAttempts = 0;
+    user.isLocked = false;
+    user.lockUntil = null;
+    await user.save();
+
+    // 2FA (only for managers with Google linked)
     if (user.role === "manager" && user.isGoogleLinked) {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expires = Date.now() + 5 * 60 * 1000;
@@ -34,7 +57,7 @@ exports.loginUser = async (req, res) => {
       });
     }
 
-    // ✅ Normal login (no 2FA)
+    // Normal login (no 2FA)
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
@@ -110,6 +133,11 @@ exports.requestPasswordReset = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Unlock account and reset failed attempts
+    user.failedLoginAttempts = 0;
+    user.isLocked = false;
+    user.lockUntil = null;
 
     const token = generateResetToken();
     const expiry = Date.now() + 1000 * 60 * 30;
@@ -243,5 +271,29 @@ exports.logoutUser = async (req, res) => {
   } catch (err) {
     console.error("Logout log error:", err);
     res.status(500).json({ error: "Logout failed" });
+  }
+};
+
+exports.resend2FA = async (req, res) => {
+  try {
+    const userId = req.body.userId;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Only allow for managers with Google linked (same as loginUser)
+    if (user.role !== "manager" || !user.isGoogleLinked) {
+      return res.status(400).json({ error: "2FA not enabled for this user" });
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = Date.now() + 5 * 60 * 1000;
+    temp2FACodes[user._id] = { code, expires };
+
+    const sendTo = user.googleEmail || user.email;
+    await send2FACode(sendTo, code);
+    res.json({ message: "2FA code resent", tempUserId: user._id, sendTo });
+  } catch (err) {
+    console.error("resend2FA error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 };

@@ -53,7 +53,23 @@ function AdminPanel() {
         setOpen(true);
     };
 
+    // Password validation function
+    const validatePassword = (password) => {
+        // At least 8 chars, one uppercase, one lowercase, one number, one special char (_ or other)
+        const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[_\W]).{8,}$/;
+        return regex.test(password);
+    };
+
     const handleSave = async () => {
+        // Validate password for new user or if editing and password is set
+        if (!editingUser && !validatePassword(formData.password)) {
+            alert('Password must be at least 8 characters, include one uppercase letter, one lowercase letter, one number, and one special character (e.g. _).');
+            return;
+        }
+        if (editingUser && formData.password && !validatePassword(formData.password)) {
+            alert('Password must be at least 8 characters, include one uppercase letter, one lowercase letter, one number, and one special character (e.g. _).');
+            return;
+        }
         try {
             if (editingUser) {
                 await axios.put(`/admin/users/${editingUser._id}`, {
@@ -89,30 +105,7 @@ function AdminPanel() {
 
     return (
         <MainLayout>
-            {/* Top Right Icons */}
-            <Box sx={{ ml: '220px', p: 3 }}>
-
-                <Box display="flex" justifyContent="flex-end" alignItems="center" gap={2} mb={3}>
-                    <IconButton><HelpOutline /></IconButton>
-                    <IconButton><Apps /></IconButton>
-                    <IconButton><Settings /></IconButton>
-                    <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                        <AccountCircle />
-                    </IconButton>
-                    <Menu anchorEl={anchorEl} open={openMenu} onClose={() => setAnchorEl(null)}>
-                        <Box px={2} py={1}>
-                            <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
-                            <Typography variant="subtitle1">Hi, <span style={{ color: "#10B981" }}>{username}</span></Typography>
-                        </Box>
-                        <MenuItem disabled>➕ Add account</MenuItem>
-                        <Box px={2} py={1}>
-                            <Button variant="outlined" color="error" fullWidth onClick={handleLogout}>
-                                Sign out
-                            </Button>
-                        </Box>
-                    </Menu>
-                </Box>
-
+            <Box sx={{ ml: { md: '220px', xs: 0 }, p: 3 }}>
                 {/* Heading and Add Button */}
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                     <Typography variant="h4">Manage Users</Typography>
@@ -121,7 +114,7 @@ function AdminPanel() {
 
                 {/* Manager Table */}
                 <Paper sx={{ p: 2 }}>
-                    {users.length === 0 ? (
+                    {Array.isArray(users) && users.length === 0 ? (
                         <Typography textAlign="center" color="text.secondary" py={6}>
                             No managers found. Click <strong>"New Manager"</strong> to create one.
                         </Typography>
@@ -136,7 +129,7 @@ function AdminPanel() {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {users
+                                {Array.isArray(users) && users
                                     .filter((u) => u._id !== user?.id)
                                     // ✅ hide self from list
                                     .map((u) => (
@@ -178,7 +171,6 @@ function AdminPanel() {
                     )}
                 </Paper>
 
-
                 {/* Create/Edit Dialog */}
                 <Dialog open={open} onClose={() => setOpen(false)}>
                     <DialogTitle>{editingUser ? 'Edit User' : 'New User'}</DialogTitle>
@@ -200,6 +192,8 @@ function AdminPanel() {
                                 type="password"
                                 value={formData.password}
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                helperText="At least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special (_ or symbol)"
+                                error={formData.password.length > 0 && !validatePassword(formData.password)}
                             />
                         )}
 
@@ -267,7 +261,6 @@ function AdminPanel() {
                 </Dialog>
 
                 {user?.role === 'manager' && <SortaBot />}
-
             </Box>
         </MainLayout>
     );

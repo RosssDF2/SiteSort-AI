@@ -1,20 +1,12 @@
 const { google } = require("googleapis");
 const User = require("../models/User");
+const { getGoogleAuthClient } = require("./googleAuthHelper");
 
 async function uploadFileWithOAuth(userId, fileBuffer, filename, folderId) {
     const user = await User.findById(userId);
-    if (!user || !user.googleAccessToken) throw new Error("User not linked to Google");
+    if (!user) throw new Error("User not found");
 
-    const oAuth2Client = new google.auth.OAuth2(
-        process.env.GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET,
-        process.env.GOOGLE_REDIRECT_URI || "http://localhost:3001/api/auth/google/callback"
-    );
-
-    oAuth2Client.setCredentials({
-        access_token: user.googleAccessToken,
-        refresh_token: user.googleRefreshToken,
-    });
+    const oAuth2Client = await getGoogleAuthClient(user);
 
     const drive = google.drive({ version: "v3", auth: oAuth2Client });
 

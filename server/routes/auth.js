@@ -8,13 +8,14 @@ const authMiddleware = require("../middlewares/authMiddleware");
 const { logoutUser } = require("../controllers/authController");
 const { askGemini } = require('../utils/vertexGemini');
 
-const { loginUser, verify2FA } = require("../controllers/authController");
+const { loginUser, verify2FA, resend2FA } = require("../controllers/authController");
 const upload = require("../middlewares/uploadMiddleware");
 const { personalizeUser } = require("../controllers/authController");
 
 // ✅ Login & 2FA
 router.post("/login", loginUser);
 router.post("/verify-2fa", verify2FA);
+router.post("/resend-2fa", resend2FA);
 
 // ✅ Step 0: Initiate secure bind (JWT → Session)
 router.post("/bind/initiate", (req, res) => {

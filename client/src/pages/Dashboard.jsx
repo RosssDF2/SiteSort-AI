@@ -25,6 +25,7 @@ import {
     Divider,
     IconButton,
 } from "@mui/material";
+import InsightHistory from "../components/InsightHistory";
 import axios from "axios";
 import MainLayout from "../layouts/MainLayout";
 import { UserContext } from "../contexts/UserContext";
@@ -39,6 +40,7 @@ const authHeaders = () => ({
 const Dashboard = () => {
     // --- Global state you already had ---
     const [insights, setInsights] = useState([]);
+    const [insightUpdateTrigger, setInsightUpdateTrigger] = useState(0);
     const [viewMode, setViewMode] = useState("basic");
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -518,65 +520,167 @@ const Dashboard = () => {
 
                     {viewMode === "advanced" && (
                         <Grid item xs={12}>
-                            <ProjectFileExplorer onNewInsight={(insight) => setInsights([insight, ...insights])} />
+                            <ProjectFileExplorer onNewInsight={(insight) => {
+                                setInsights([insight, ...insights]);
+                                setInsightUpdateTrigger(prev => prev + 1); // Trigger history refresh
+                            }} />
                         </Grid>
                     )}
                 </Grid>
 
 
 
-                {/* Insight Logs (unchanged) */}
-                <Box mt={6}>
-                    <Card
-                        sx={{
-                            minHeight: "45vh",
-                            display: "flex",
-                            flexDirection: "column",
-                            borderRadius: "12px",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                        }}
-                    >
-                        <CardContent sx={{ flexGrow: 1 }}>
-                            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                                <Typography variant="h6">📝 Insight Logs</Typography>
-                                <Box display="flex" gap={1}>
-                                    <Button
-                                        onClick={handleAnalyzeInsights}
-                                        variant="contained"
-                                        disabled={analyzingInsights || insights.length === 0}
-                                        sx={{ borderRadius: "6px", backgroundColor: "#3949ab" }}
-                                    >
-                                        {analyzingInsights ? "Analyzing…" : "AI Analyze"}
-                                    </Button>
-                                </Box>
-                            </Box>
+                {/* Insight section */}
+                <Box mt={6} sx={{ height: '50vh', width: '100%', overflow: 'hidden' }}>
+                    <Grid container spacing={3} sx={{ height: '100%' }}>
+                        {/* Insight Logs */}
+                        <Grid item xs={12} md={8} sx={{ height: '100%', maxWidth: '1000px' }}>
+                            <Card
+                                sx={{
+                                    height: '100%',
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    borderRadius: "12px",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                                }}
+                            >
+                                <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
+                                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                                        <Typography variant="h6" sx={{ flex: '0 0 auto' }}>📝 Insight Logs</Typography>
+                                        <Box display="flex" gap={2} sx={{ flex: '0 0 auto', ml: 2 }}>
+                                            <Button
+                                                variant="outlined"
+                                                onClick={() => {
+                                                    const summary = prompt("Enter your custom insight:");
+                                                    if (summary) {
+                                                        const today = new Date().toLocaleDateString("en-GB");
+                                                        axios.post("/api/insights", 
+                                                            { date: today, summary },
+                                                            { headers: authHeaders() }
+                                                        ).then(res => {
+                                                            setInsights([res.data, ...insights]);
+                                                            setInsightUpdateTrigger(prev => prev + 1);
+                                                            setSnackbarMessage("Custom insight added successfully");
+                                                            setSnackbarSeverity("success");
+                                                            setSnackbarOpen(true);
+                                                        }).catch(err => {
+                                                            console.error("Failed to add custom insight", err);
+                                                            setSnackbarMessage("Failed to add custom insight");
+                                                            setSnackbarSeverity("error");
+                                                            setSnackbarOpen(true);
+                                                        });
+                                                    }
+                                                }}
+                                                sx={{ borderRadius: "6px" }}
+                                            >
+                                                ➕ Add Custom Insight
+                                            </Button>
+                                            <Button
+                                                onClick={handleAnalyzeInsights}
+                                                variant="contained"
+                                                disabled={analyzingInsights || insights.length === 0}
+                                                sx={{ borderRadius: "6px", backgroundColor: "#3949ab" }}
+                                            >
+                                                {analyzingInsights ? "Analyzing…" : "AI Analyze"}
+                                            </Button>
+                                        </Box>
+                                    </Box>
 
-                            <Box sx={{ overflowY: "auto", maxHeight: "30vh" }}>
-                                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                                    <thead>
-                                        <tr>
-                                            <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
-                                                📅 Date
-                                            </th>
-                                            <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
-                                                🧠 Insight Summary
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {insights.map((log, index) => (
-                                            <tr key={index}>
-                                                <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>{log.date}</td>
-                                                <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>
-                                                    {log.summary}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </Box>
-                        </CardContent>
-                    </Card>
+                                    <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
+                                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                            <thead>
+                                                <tr>
+                                                    <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd", backgroundColor: '#fff', position: 'sticky', top: 0, width: '100px' }}>
+                                                        📅 Date
+                                                    </th>
+                                                    <th align="left" style={{ padding: "8px", borderBottom: "1px solid #ddd", backgroundColor: '#fff', position: 'sticky', top: 0 }}>
+                                                        🧠 Insight Summary
+                                                    </th>
+                                                    <th align="right" style={{ padding: "8px", borderBottom: "1px solid #ddd", backgroundColor: '#fff', position: 'sticky', top: 0, width: '120px' }}>
+                                                        Actions
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {insights.map((log) => (
+                                                    <tr key={log._id}>
+                                                        <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>{log.date}</td>
+                                                        <td style={{ padding: "8px", borderBottom: "1px solid #eee" }}>
+                                                            {log.summary}
+                                                        </td>
+                                                        <td style={{ padding: "8px", borderBottom: "1px solid #eee", textAlign: 'right' }}>
+                                                            <Button
+                                                                size="small"
+                                                                onClick={() => {
+                                                                    const newSummary = prompt("Edit insight:", log.summary);
+                                                                    if (newSummary && newSummary !== log.summary) {
+                                                                        axios.put(
+                                                                            `/api/insights/${log._id}`,
+                                                                            { summary: newSummary },
+                                                                            { headers: authHeaders() }
+                                                                        ).then(res => {
+                                                                            setInsights(prev => 
+                                                                                prev.map(insight => 
+                                                                                    insight._id === log._id ? res.data : insight
+                                                                                )
+                                                                            );
+                                                                            setSnackbarMessage("Insight updated successfully");
+                                                                            setSnackbarSeverity("success");
+                                                                            setSnackbarOpen(true);
+                                                                        }).catch(err => {
+                                                                            console.error("Failed to update insight", err);
+                                                                            setSnackbarMessage("Failed to update insight");
+                                                                            setSnackbarSeverity("error");
+                                                                            setSnackbarOpen(true);
+                                                                        });
+                                                                    }
+                                                                }}
+                                                                sx={{ minWidth: 0, mr: 1 }}
+                                                            >
+                                                                ✏️
+                                                            </Button>
+                                                            <Button
+                                                                size="small"
+                                                                color="error"
+                                                                onClick={() => {
+                                                                    if (window.confirm("Are you sure you want to delete this insight?")) {
+                                                                        axios.delete(
+                                                                            `/api/insights/${log._id}`,
+                                                                            { headers: authHeaders() }
+                                                                        ).then(() => {
+                                                                            setInsights(prev => 
+                                                                                prev.filter(insight => insight._id !== log._id)
+                                                                            );
+                                                                            setSnackbarMessage("Insight deleted successfully");
+                                                                            setSnackbarSeverity("success");
+                                                                            setSnackbarOpen(true);
+                                                                        }).catch(err => {
+                                                                            console.error("Failed to delete insight", err);
+                                                                            setSnackbarMessage("Failed to delete insight");
+                                                                            setSnackbarSeverity("error");
+                                                                            setSnackbarOpen(true);
+                                                                        });
+                                                                    }
+                                                                }}
+                                                                sx={{ minWidth: 0 }}
+                                                            >
+                                                                🗑️
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+
+                        {/* Insight History */}
+                        <Grid item xs={12} md={4} sx={{ height: '100%' }}>
+                            <InsightHistory updateTrigger={insightUpdateTrigger} />
+                        </Grid>
+                    </Grid>
                 </Box>
             </Box>
 

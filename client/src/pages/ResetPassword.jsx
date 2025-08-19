@@ -12,9 +12,20 @@ export default function ResetPassword() {
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState("");
 
+    // Password validation function
+    const validatePassword = (password) => {
+        // At least 8 chars, one uppercase, one lowercase, one number, one special char (_ or other)
+        const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[_\W]).{8,}$/;
+        return regex.test(password);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
+        if (!validatePassword(password)) {
+            setError('Password must be at least 8 characters, include one uppercase letter, one lowercase letter, one number, and one special character (e.g. _).');
+            return;
+        }
         try {
             await http.post("/auth/reset-password", { token, newPassword: password });
             setSuccess(true);
@@ -96,6 +107,8 @@ export default function ResetPassword() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             margin="normal"
+                            helperText="At least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special (_ or symbol)"
+                            error={password.length > 0 && !validatePassword(password)}
                         />
                         {error && (
                             <Alert severity="error" sx={{ mt: 1 }}>

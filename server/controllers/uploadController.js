@@ -1,7 +1,7 @@
 const { extractTextFromPDF } = require("../utils/pdfParser");
 const { uploadFileWithOAuth } = require("../utils/driveOauthUploader");
 const UploadHistory = require("../models/UploadHistory");
-const { generateSmartTags } = require('../utils/documentAnalyzer');
+const { detectDocumentType, generateSmartTags } = require('../utils/documentAnalyzer');
 const { generateSmartSummary } = require('../utils/summaryGenerator');
 const { google } = require("googleapis");
 const User = require("../models/User");
@@ -32,14 +32,44 @@ async function getSuggestedFolder(userId, tags, content) {
     
     const drive = google.drive({ version: "v3", auth: oauth2Client });
 
-    // Check if this is a financial document
-    const isFinancial = content.toLowerCase().includes('budget') || 
-                       content.toLowerCase().includes('financial') ||
-                       content.toLowerCase().includes('cost') ||
-                       content.toLowerCase().includes('expenditure');
+    // Use improved document type detection
+    let documentTypes = [];
+    let isFinancial = false;
+    let isRFI = false;
+    let isRFQ = false;
 
-    // Try to find the financials folder first for financial documents
-    if (isFinancial) {
+    try {
+      if (!content) {
+        throw new Error('No content provided for document type detection');
+      }
+      documentTypes = detectDocumentType(content);
+      console.log("Detected document types:", documentTypes);
+      
+      isFinancial = documentTypes.includes('FINANCIAL');
+      isRFI = documentTypes.includes('RFI');
+      isRFQ = documentTypes.includes('RFQ');
+    } catch (error) {
+      console.error("Error detecting document type:", error);
+      // Default to checking content directly as fallback
+      const contentLower = content.toLowerCase();
+      isFinancial = contentLower.includes('budget') || 
+                    contentLower.includes('financial') ||
+                    contentLower.includes('cost') ||
+                    contentLower.includes('expenditure');
+      
+      isRFI = contentLower.includes('rfi') ||
+              contentLower.includes('request for information') ||
+              contentLower.includes('information request');
+      
+      isRFQ = contentLower.includes('rfq') ||
+              contentLower.includes('request for quotation') ||
+              contentLower.includes('quotation request');
+    }
+
+    console.log("Document classification:", { isFinancial, isRFI, isRFQ });
+
+    // Try to find the appropriate folder first based on document type
+    if (isFinancial || isRFI || isRFQ) {
       // Get the full folder structure
       const foldersRes = await drive.files.list({
         q: "mimeType='application/vnd.google-apps.folder' and trashed=false",
@@ -52,22 +82,36 @@ async function getSuggestedFolder(userId, tags, content) {
       // Find the project folder (e.g., Yewtee Community)
       const projectFolder = allFoldersMap.find(f => 
         tags.some(tag => f.name.toLowerCase().includes(tag.toLowerCase())) &&
-        f.name.toLowerCase().includes('community')
+        (f.name.toLowerCase().includes('community') || f.name.toLowerCase().includes('project'))
       );
 
       if (projectFolder) {
-        // Look for a financials folder within the project folder
-        const financialsFolder = allFoldersMap.find(f => 
+        // Look for appropriate folder within the project folder based on document type
+        const targetFolder = allFoldersMap.find(f => 
           f.parents && f.parents[0] === projectFolder.id && 
-          (f.name.toLowerCase() === 'financials' || 
-           f.name.toLowerCase() === 'financial' ||
-           f.name.toLowerCase().includes('budget'))
+          (
+            (isFinancial && (
+              f.name.toLowerCase() === 'financials' || 
+              f.name.toLowerCase() === 'financial' ||
+              f.name.toLowerCase().includes('budget')
+            )) ||
+            (isRFI && (
+              f.name.toLowerCase() === 'rfi' ||
+              f.name.toLowerCase().includes('information request') ||
+              f.name.toLowerCase().includes('requests')
+            )) ||
+            (isRFQ && (
+              f.name.toLowerCase() === 'rfq' ||
+              f.name.toLowerCase().includes('quotation') ||
+              f.name.toLowerCase().includes('requests')
+            ))
+          )
         );
 
-        if (financialsFolder) {
+        if (targetFolder) {
           // Get the full path to this folder
           const folderPath = [];
-          let currentFolder = financialsFolder;
+          let currentFolder = targetFolder;
           
           while (currentFolder) {
             folderPath.unshift(currentFolder.name);
@@ -78,7 +122,7 @@ async function getSuggestedFolder(userId, tags, content) {
 
           return { 
             path: folderPath.join(' > '),
-            folderId: financialsFolder.id
+            folderId: targetFolder.id
           };
         }
       }
@@ -91,7 +135,7 @@ async function getSuggestedFolder(userId, tags, content) {
       spaces: "drive"
     });
 
-    const allFolders = allFoldersRes.data.files;
+    const allFolders = foldersQuery.data.files;
     if (!allFolders || allFolders.length === 0) {
       return { path: "General" };
     }
@@ -187,7 +231,14 @@ exports.analyzeFile = async (req, res) => {
 
     // Get parent folder ID from request and generate tags
     const parentFolderId = req.body.parentFolderId;
-    const tags = await generateSmartTags(text, req.user.id, parentFolderId);
+    let tags;
+    
+    try {
+        tags = await generateSmartTags(text, req.user.id, parentFolderId);
+    } catch (error) {
+        console.error('Error generating tags:', error);
+        tags = [];
+    }
     
     // Get folder suggestion based on content and available folders
     const folderSuggestion = await getSuggestedFolder(req.user.id, tags, text);

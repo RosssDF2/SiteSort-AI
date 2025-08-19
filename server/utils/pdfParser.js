@@ -9,42 +9,77 @@ const PDF_OPTIONS = {
   // Include useful metadata
   includeXrefs: true,
   // Try to recover broken cross-references
-  repairXrefDamage: true
+  repairXrefDamage: true,
+  // Additional robustness options
+  skipXrefValidation: true,
+  pagerender: function(pageData) {
+    // Custom rendering to handle more PDF formats
+    let render_options = {
+      normalizeWhitespace: true,
+      disableCombineTextItems: false
+    };
+    return pageData.getTextContent(render_options)
+      .then(function(textContent) {
+        let text = "";
+        let lastY = null;
+        let lastX = null;
+
+        // Process each text item
+        for (const item of textContent.items) {
+          if (lastY !== item.transform[5] || (lastX !== null && (item.transform[4] - lastX) > 100)) {
+            text += "\n";
+          } else if (text.length > 0 && !text.endsWith(" ")) {
+            text += " ";
+          }
+          text += item.str;
+          lastY = item.transform[5];
+          lastX = item.transform[4];
+        }
+        return text;
+      });
+  }
 };
 
-exports.extractTextFromPDF = async (buffer) => {
+async function tryParseWithOptions(buffer, options) {
   try {
-    // First attempt: Standard pdf-parse with recovery options
-    const data = await pdfParse(buffer, PDF_OPTIONS);
-    
+    const data = await pdfParse(buffer, options);
     if (data.text && data.text.trim().length > 0) {
       console.log(`✅ PDF text extracted successfully: ${data.text.length} characters`);
       return data.text.trim();
     }
-    
-    // If no text was found, try a more aggressive parsing approach
-    console.warn("⚠️ First parse attempt yielded no text, trying fallback method...");
-    
-    // Modify options for second attempt
+    return null;
+  } catch (err) {
+    console.warn(`⚠️ PDF parse attempt failed: ${err.message}`);
+    return null;
+  }
+}
+
+exports.extractTextFromPDF = async (buffer) => {
+  try {
+    // First attempt: Standard parsing
+    let text = await tryParseWithOptions(buffer, PDF_OPTIONS);
+    if (text) return text;
+
+    // Second attempt: More aggressive options
     const fallbackOptions = {
       ...PDF_OPTIONS,
-      // Force less strict parsing
       throwOnErrors: false,
-      // Skip XRef validation
       skipXrefValidation: true,
-      // Ignore cross-reference tables
-      ignoreXrefs: true
+      ignoreXrefs: true,
+      verbosity: -1
     };
-    
-    const fallbackData = await pdfParse(buffer, fallbackOptions);
-    
-    if (fallbackData.text && fallbackData.text.trim().length > 0) {
-      console.log(`✅ PDF text extracted successfully (fallback): ${fallbackData.text.length} characters`);
-      return fallbackData.text.trim();
-    }
-    
-    console.warn("⚠️ PDF parsed but no text content found");
-    return null;
+    text = await tryParseWithOptions(buffer, fallbackOptions);
+    if (text) return text;
+
+    // Third attempt: Raw text extraction
+    const lastResortOptions = {
+      ...fallbackOptions,
+      useRawTextExtraction: true,
+      maxReadSizeBytes: buffer.length,
+      ignoreEncryption: true
+    };
+    text = await tryParseWithOptions(buffer, lastResortOptions);
+    if (text) return text;
     
   } catch (err) {
     console.error("❌ PDF parsing error:", err.message);

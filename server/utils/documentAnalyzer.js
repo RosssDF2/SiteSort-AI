@@ -2,6 +2,147 @@ const { google } = require('googleapis');
 const User = require('../models/User');
 const { generateSmartSummary } = require('./summaryGenerator');
 
+/**
+ * Document type detection patterns and utilities
+ */
+const DOC_PATTERNS = {
+  RFI: {
+    keywords: ['rfi', 'request for information', 'information request'],
+    patterns: [
+      /RFI[:\s-]*(?:no\.?|number)?[\s-]*([A-Z0-9-]+)/i,
+      /Request\s+for\s+Information/i,
+      /Information\s+Request/i
+    ]
+  },
+  RFQ: {
+    keywords: ['rfq', 'request for quotation', 'quotation request'],
+    patterns: [
+      /RFQ[:\s-]*(?:no\.?|number)?[\s-]*([A-Z0-9-]+)/i,
+      /Request\s+for\s+Quotation/i,
+      /Quotation\s+Request/i
+    ]
+  },
+  FINANCIAL: {
+    keywords: ['budget', 'financial', 'cost', 'expenditure'],
+    patterns: [
+      /Q[1-4]\s*20\d{2}/i,
+      /(?:budget|financial|cost)\s+(?:report|summary|analysis)/i,
+      /(?:project|phase)\s+budget/i
+    ]
+  }
+};
+
+// Helper function to detect document type
+function detectDocumentType(text) {
+  if (!text || typeof text !== 'string') {
+    console.error('Invalid text input:', text);
+    return [];
+  }
+  
+  const contentLower = text.toLowerCase();
+  const types = [];
+  
+  for (const [type, patterns] of Object.entries(DOC_PATTERNS)) {
+    // Check keywords
+    if (patterns.keywords.some(keyword => contentLower.includes(keyword))) {
+      types.push(type);
+      continue;
+    }
+    
+    // Check regex patterns
+    if (patterns.patterns.some(pattern => pattern.test(text))) {
+      types.push(type);
+    }
+  }
+  
+  return types;
+}
+
+// Generate smart tags for document content
+async function generateSmartTags(text, userId, folderId) {
+  if (!text || typeof text !== 'string') {
+    console.error('Invalid text input for tag generation:', text);
+    return [];
+  }
+
+  const tags = new Set();
+  const documentTypes = detectDocumentType(text);
+
+  // Add document type as tags
+  documentTypes.forEach(type => tags.add(type));
+
+  // Extract additional context-based tags
+  const patterns = {
+    projectCode: /(?:project|code)[\s:]+([A-Z0-9-]{3,10})/i,
+    date: /(?:\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|\d{4}[-/]\d{1,2}[-/]\d{1,2})/,
+    department: /(?:department|division|dept|div)[\s:]+([^\n,.]{2,30})/i,
+  };
+
+  Object.entries(patterns).forEach(([key, pattern]) => {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      tags.add(match[1].trim());
+    }
+  });
+
+  return Array.from(tags);
+}
+
+const DocumentAnalyzer = {
+  detectDocumentType,
+  generateSmartTags,
+  patterns: {
+    RFI: {
+      keywords: ['rfi', 'request for information', 'information request'],
+      patterns: [
+        /RFI[:\s-]*(?:no\.?|number)?[\s-]*([A-Z0-9-]+)/i,
+        /Request\s+for\s+Information/i,
+        /Information\s+Request/i
+      ]
+    },
+    RFQ: {
+      keywords: ['rfq', 'request for quotation', 'quotation request'],
+      patterns: [
+        /RFQ[:\s-]*(?:no\.?|number)?[\s-]*([A-Z0-9-]+)/i,
+        /Request\s+for\s+Quotation/i,
+        /Quotation\s+Request/i
+      ]
+    },
+    FINANCIAL: {
+      keywords: ['budget', 'financial', 'cost', 'expenditure'],
+      patterns: [
+        /Q[1-4]\s*20\d{2}/i,
+        /(?:budget|financial|cost)\s+(?:report|summary|analysis)/i,
+        /(?:project|phase)\s+budget/i
+      ]
+    }
+  },
+
+  // Detect document type from text content
+  detectDocumentType(text) {
+    const contentLower = text.toLowerCase();
+    const types = [];
+    
+    for (const [type, config] of Object.entries(this.patterns)) {
+      // Check keywords
+      if (config.keywords.some(keyword => contentLower.includes(keyword))) {
+        types.push(type);
+        continue;
+      }
+      
+      // Check regex patterns
+      if (config.patterns.some(pattern => pattern.test(text))) {
+        types.push(type);
+      }
+    }
+    
+    return types;
+  }
+};
+
+// Export the document analyzer
+module.exports = DocumentAnalyzer;
+
 // Get Drive folder structure for a path
 // Helper function to get folder tree structure
 async function getFolderTree(drive, parentId = null) {
@@ -144,6 +285,11 @@ async function generateSmartTags(text, userId, folderId) {
 
   return Array.from(tags);
 }
+
+module.exports = {
+  ...DocumentAnalyzer,
+  generateSmartTags
+};
 
 module.exports = {
   generateSmartTags,

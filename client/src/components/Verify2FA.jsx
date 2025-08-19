@@ -69,12 +69,11 @@ export default function Verify2FA() {
   // resend handler
   const handleResend = () => {
     http
-      .post("/auth/login", { email, password })
+      .post("/auth/resend-2fa", { userId: tempUserId, email })
       .then((res) => {
-        // update tempUserId for the new code
-        location.state.tempUserId = res.data.tempUserId;
-        location.state.email = res.data.sendTo; // <-- update masked email too
-
+        // update tempUserId for the new code if needed
+        if (res.data.tempUserId) location.state.tempUserId = res.data.tempUserId;
+        if (res.data.sendTo) location.state.email = res.data.sendTo;
         alert("A new code has been sent to your email.");
       })
       .catch((err) => {

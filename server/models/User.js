@@ -86,6 +86,20 @@ const userSchema = new mongoose.Schema({
     default: null,
   },
 
+  // Brute-force protection fields
+  failedLoginAttempts: {
+    type: Number,
+    default: 0
+  },
+  isLocked: {
+    type: Boolean,
+    default: false
+  },
+  lockUntil: {
+    type: Date,
+    default: null
+  }
+
 }, { timestamps: true });
 
 

@@ -12,6 +12,7 @@ const port = process.env.APP_PORT || 3001;
 // ✅ Route imports
 const logRoutes = require("./routes/logs");
 const insightRoutes = require("./routes/insightRoutes");
+const insightHistoryRoutes = require("./routes/insightHistoryRoutes");
 const dashboard = require("./routes/dashboard");
 const projectRoutes = require('./routes/projectRoutes');
 const fileRoutes = require('./routes/fileRoutes');
@@ -61,6 +62,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/logs", logRoutes);
 app.use("/api/insights", insightRoutes);
+app.use("/api/insight-history", insightHistoryRoutes);
 app.use("/api/dashboard", dashboard);
 app.use("/api/projects", projectRoutes);
 app.use("/api/files", fileRoutes);

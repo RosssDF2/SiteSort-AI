@@ -1,5 +1,6 @@
 // server/controllers/insightController.js
 const Insight = require("../models/Insight");
+const InsightHistory = require("../models/InsightHistory");
 const { generateText } = require("../utils/vertexGemini"); // adjust to your helper
 
 
@@ -18,6 +19,11 @@ exports.addInsight = async (req, res) => {
     const { date, summary } = req.body;
     const newInsight = new Insight({ userId: req.user.id, date, summary });
     await newInsight.save();
+
+    // Also add to insight history
+    const newHistoryInsight = new InsightHistory({ userId: req.user.id, date, summary });
+    await newHistoryInsight.save();
+
     res.json(newInsight);
   } catch (err) {
     console.error(err);
