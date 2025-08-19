@@ -26,7 +26,7 @@ export default function BindGoogle() {
       })
       .catch((err) => {
         console.error("Google bind error", err);
-        navigate("/login");
+        navigate("/profile?error=already_bound");
       });
   }, [navigate, setUser]);
 

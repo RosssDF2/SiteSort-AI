@@ -42,6 +42,13 @@ passport.use("google-bind", new GoogleStrategy(
         return done(null, false);
       }
 
+      // Check if Google account is already bound to another user
+      const existingGoogleUser = await User.findOne({ googleId: profile.id });
+      if (existingGoogleUser && existingGoogleUser._id.toString() !== user._id.toString()) {
+        console.log("❌ Google account already bound to another user");
+        return done(null, false, { message: "This Google account is already bound to another SiteSort account" });
+      }
+
       console.log("🔗 Binding account:", profile.displayName);
       console.log("📧 Google Email:", profile.emails?.[0]?.value);
       console.log("🔑 Access Token (short):", accessToken?.slice(0, 20), "...");
