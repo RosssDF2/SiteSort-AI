@@ -63,7 +63,11 @@ exports.extractTextFromPDF = async (buffer) => {
           ...PDF_OPTIONS,
           ignoreXrefs: true,
           skipXrefValidation: true,
-          throwOnErrors: false
+          throwOnErrors: false,
+          // Additional recovery options
+          disableCombinedImage: true,    // Skip image processing
+          disableRenderText: false,      // Force text rendering
+          verbosity: 1                   // Increase logging
         };
         const lastAttemptData = await pdfParse(buffer, lastAttemptOptions);
         if (lastAttemptData.text && lastAttemptData.text.trim().length > 0) {
@@ -72,7 +76,17 @@ exports.extractTextFromPDF = async (buffer) => {
         }
       } catch (finalErr) {
         console.error("❌ Final recovery attempt failed:", finalErr.message);
+        // Check for common problems
+        if (finalErr.message.includes('stream')) {
+          console.error("❌ PDF may be using unsupported compression or encoding");
+        } else if (finalErr.message.includes('font')) {
+          console.error("❌ PDF contains custom or embedded fonts that can't be processed");
+        }
       }
+    } else if (err.message.includes('stream')) {
+      console.error("❌ PDF has unsupported compression or encoding");
+    } else if (err.message.includes('font')) {
+      console.error("❌ PDF contains problematic fonts");
     }
     
     console.error("❌ All PDF parsing attempts failed");
@@ -100,8 +114,22 @@ exports.extractTextFromPDFWithDetails = async (buffer, fileName) => {
       return {
         success: false,
         error: "File does not appear to be a valid PDF",
-        details: `File header: ${pdfHeader}`
+        details: `File header: ${pdfHeader}`,
+        suggestion: "Please check if the file is a valid PDF document"
       };
+    }
+    
+    // Check for potential scanned document
+    const firstKB = buffer.slice(0, 1024).toString('hex');
+    const imageSignatures = [
+      'ffd8ff', // JPEG
+      '89504e47', // PNG
+      '47494638' // GIF
+    ];
+    
+    const mightBeScanned = imageSignatures.some(sig => firstKB.includes(sig));
+    if (mightBeScanned) {
+      console.warn("⚠️ PDF appears to contain scanned images - text extraction may fail");
     }
 
     const data = await pdfParse(buffer);
@@ -129,7 +157,8 @@ exports.extractTextFromPDFWithDetails = async (buffer, fileName) => {
     let errorDetails = {
       success: false,
       error: "Failed to extract text from PDF",
-      details: err.message
+      details: err.message,
+      fileName: fileName // Include filename in error for better debugging
     };
 
     if (err.message.includes('Invalid PDF')) {
