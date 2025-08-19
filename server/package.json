@@ -21,6 +21,7 @@
     "googleapis": "^152.0.0",
     "html-pdf-node": "^1.0.8",
     "html2canvas": "^1.4.1",
+    "jsonrepair": "^3.13.0",
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.1",
     "mongodb": "^6.17.0",

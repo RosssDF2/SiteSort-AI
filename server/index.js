@@ -15,7 +15,7 @@ const insightRoutes = require("./routes/insightRoutes");
 const dashboard = require("./routes/dashboard");
 const projectRoutes = require('./routes/projectRoutes');
 const fileRoutes = require('./routes/fileRoutes');
-const budgetRoutes = require("./routes/budgetRoutes");
+const searchFirmanRoutes = require("./routes/searchFirmanRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const enquiryRoutes = require("./routes/EnquiryRoutes");
 const chatLogRoutes = require('./routes/chatLogs');
@@ -29,6 +29,7 @@ const summaryRoutes = require("./routes/summaries");
 const reportRoutes = require("./routes/reports");
 const pdfRoutes = require("./routes/pdfRoutes");
 
+const taskRoutes = require("./routes/taskRoutes");
 
 // 🆕 You will re-add /api/drive once your OAuth drive route is implemented
 
@@ -63,7 +64,7 @@ app.use("/api/insights", insightRoutes);
 app.use("/api/dashboard", dashboard);
 app.use("/api/projects", projectRoutes);
 app.use("/api/files", fileRoutes);
-app.use("/api/budget", budgetRoutes);
+app.use("/api/search-firman", searchFirmanRoutes);
 app.use("/api/enquiry", enquiryRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/upload", uploadRoutes);
@@ -74,6 +75,7 @@ app.use("/api", debugRoutes);
 app.use("/api/summaries", summaryRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/pdf", pdfRoutes);
+app.use("/api/tasks", taskRoutes);
 
 
 // ✅ Default route

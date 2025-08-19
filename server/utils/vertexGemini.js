@@ -37,6 +37,31 @@ resetDailyTokenUsage();
 function estimateTokens(text) {
     return Math.ceil(text.trim().split(/\s+/).length * 1.3);
 }
+function tryRepairJSON(text, filename) {
+    if (!text) return null;
+
+    // Strip markdown fences
+    let cleaned = text.replace(/```json|```/gi, "").trim();
+
+    // Grab first JSON object
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+
+    let candidate = jsonMatch[0];
+
+    // Basic fixes
+    candidate = candidate
+        .replace(/,\s*}/g, "}")   // remove trailing commas before }
+        .replace(/,\s*]/g, "]")   // remove trailing commas before ]
+        .replace(/'/g, '"');      // single → double quotes
+
+    try {
+        return JSON.parse(candidate);
+    } catch (err) {
+        console.warn("⚠️ JSON repair still failed for", filename, err.message);
+        return null;
+    }
+}
 
 // 🔍 Match only the relevant section based on keywords
 function extractRelevantContext(prompt, context) {
@@ -347,9 +372,111 @@ async function askSiteSortAIWithFiles(prompt, files) {
         };
     } catch (err) {
         console.error("❌ SiteSort AI Error with files:", err.message || err);
+                return {
+                    reply: "❌ SiteSort AI ran into an issue processing the files. Try again later.",
+                    blocked: true,
+                };
+            }
+        }
+
+// 🎯 Improved Structured Budget Extractor with retries + repair
+async function extractStructuredBudget(extractedText, filename) {
+    const basePrompt = (docText) => `
+You are an AI that extracts budget data from construction project PDFs.
+
+Return **valid JSON only** in this exact schema:
+
+{
+  "fileName": string,
+  "category": "Budget",
+  "metrics": { "used": number, "remaining": number },
+  "table": string[][],
+  "updates": string[],
+  "risks": string[],
+  "insight": string
+}
+
+Rules:
+- Output must be raw JSON (no markdown, no comments).
+- "metrics.used" and "metrics.remaining" must be numbers only.
+- Always include "table" (header + rows).
+- "updates" should be clear status points.
+- "risks" should have severity markers (High/Medium/Low Risk).
+- "insight" = one short recommendation.
+
+Example:
+{
+  "fileName": "Financials_ProjectBudgetSummary.pdf",
+  "category": "Budget",
+  "metrics": { "used": 3270000, "remaining": 1230000 },
+  "table": [
+    ["Category", "Allocated", "Used", "Remaining", "%"],
+    ["Preliminaries", "500k", "460k", "40k", "92%"]
+  ],
+  "updates": ["Budget utilization at 72.6%"],
+  "risks": ["Structural works overruns possible (High Risk)"],
+  "insight": "Review subcontractor invoices for cost overruns."
+}
+
+Now process this document:
+
+Title: ${filename}
+Content:
+${docText.slice(0, 2500)}
+`.trim();
+
+    const toNum = (x) =>
+        typeof x === "number" ? x : Number(String(x).replace(/[^\d.-]/g, "")) || null;
+
+    async function runPrompt(prompt) {
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+        return result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    }
+
+    try {
+        // --- First attempt
+        let raw = await runPrompt(basePrompt(extractedText));
+        let parsed = tryRepairJSON(raw, filename);
+
+        // --- Retry once with stricter rules if failed
+        if (!parsed) {
+            console.warn("⚠️ First parse failed, retrying for:", filename);
+            raw = await runPrompt(
+                basePrompt(extractedText) +
+                "\n\nIMPORTANT: Return ONLY valid JSON. No explanations, no markdown."
+            );
+            parsed = tryRepairJSON(raw, filename);
+        }
+
+        if (!parsed) throw new Error("AI did not return valid JSON after 2 tries");
+
+        // Coerce metrics safely
+        if (parsed.metrics) {
+            parsed.metrics.used = toNum(parsed.metrics.used);
+            parsed.metrics.remaining = toNum(parsed.metrics.remaining);
+        }
+
         return {
-            reply: "❌ SiteSort AI ran into an issue processing the files. Try again later.",
-            blocked: true,
+            fileName: parsed.fileName || filename,
+            category: "Budget",
+            metrics: parsed.metrics || { used: null, remaining: null },
+            table: parsed.table || [],
+            updates: parsed.updates || [],
+            risks: parsed.risks || [],
+            insight: parsed.insight || "No insight available.",
+        };
+    } catch (err) {
+        console.error("❌ Structured Budget Extraction failed:", filename, err.message);
+        return {
+            fileName: filename,
+            category: "Budget",
+            metrics: { used: null, remaining: null },
+            table: [],
+            updates: [],
+            risks: [],
+            insight: "Failed to extract structured budget data.",
         };
     }
 }
@@ -358,6 +485,75 @@ module.exports = {
     askGemini, // Sorta
     askSiteSortAI, // 🔥 Chat without files
     askSiteSortAIWithFiles, // 🔥 Chat with file context
+    // generateText will be added below
+};
+
+// 🌟 Generic text generator (for AI Manager "Next Steps")
+async function generateText(prompt) {
+    try {
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+
+        const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+        return text.trim();
+    } catch (err) {
+        console.error("❌ Gemini generateText error:", err.message);
+        throw err;
+    }
+}
+
+
+async function extractRFIorRFQ(extractedText, filename) {
+    const prompt = `
+You are an AI that processes construction project PDFs for RFIs (Requests for Information) or RFQs (Requests for Quotation).
+
+Return valid JSON ONLY in this schema:
+{
+  "fileName": string,
+  "category": "RFI" | "RFQ",
+  "messages": string[]
+}
+
+Rules:
+- If the file clearly contains RFI data, set category = "RFI".
+- If the file clearly contains RFQ data, set category = "RFQ".
+- "messages" should be an array of key bullet points, questions, or items inside the PDF.
+- No markdown, no explanations — just raw JSON.
+File: ${filename}
+Content:
+${extractedText.slice(0, 2000)}
+    `.trim();
+
+    try {
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+        const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const parsed = tryRepairJSON(text, filename);
+        if (!parsed) throw new Error("Invalid JSON");
+
+        return {
+            fileName: parsed.fileName || filename,
+            category: parsed.category || (filename.includes("RFI") ? "RFI" : "RFQ"),
+            messages: parsed.messages || [],
+        };
+    } catch (err) {
+        console.error("❌ RFI/RFQ extraction failed:", filename, err.message);
+        return {
+            fileName: filename,
+            category: filename.includes("RFI") ? "RFI" : "RFQ",
+            messages: ["⚠️ Could not parse messages"],
+        };
+    }
+}
+module.exports = {
+    askGemini,
+    askSiteSortAI,
     generateBudgetJSON,
     summarizeDocumentBuffer,
+    extractStructuredBudget,
+    generateText,        // 👈 added
+    extractRFIorRFQ
 };
