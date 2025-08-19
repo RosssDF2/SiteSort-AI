@@ -1,10 +1,11 @@
 // src/components/SortaBot.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     Box, Paper, Button, Typography, TextField, IconButton
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import http from '../http'; // or wherever your axios setup is
+import { UserContext } from '../contexts/UserContext';
 
 
 function SortaBot() {
@@ -13,6 +14,7 @@ function SortaBot() {
     const [chatLog, setChatLog] = useState([]);
     const [loading, setLoading] = useState(false);
     const [dotCount, setDotCount] = useState(0);
+    const { setUser } = useContext(UserContext);
 
     const handleSend = async () => {
         if (!chatInput.trim()) return;
@@ -23,15 +25,36 @@ function SortaBot() {
         setLoading(true); // ✅ START LOADING
 
         try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setChatLog((prev) => [
+                    ...prev,
+                    { from: 'sorta', text: "❌ You must be logged in to use this feature." }
+                ]);
+                setLoading(false);
+                return;
+            }
             const res = await http.post('/sorta/chat', {
                 message: chatInput
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
             });
             const botReply = { from: 'sorta', text: res.data.reply };
             setChatLog((prev) => [...prev, botReply]);
+            // If backend returns updatedUser, update UserContext
+            if (res.data.updatedUser) {
+                setUser(res.data.updatedUser);
+                localStorage.setItem("user", JSON.stringify(res.data.updatedUser));
+            }
         } catch (err) {
-            console.error("Sorta API error:", err);
-            const botReply = { from: 'sorta', text: "Oops! I had trouble reaching my brain 🧠. Try again later." };
-            setChatLog((prev) => [...prev, botReply]);
+            let errorMsg = "Oops! I had trouble reaching my brain 🧠. Try again later.";
+            if (err?.response?.status === 401) {
+                errorMsg = "❌ You must be logged in to use this feature.";
+            }
+            setChatLog((prev) => [
+                ...prev,
+                { from: 'sorta', text: errorMsg }
+            ]);
         } finally {
             setLoading(false); // ✅ END LOADING
         }
