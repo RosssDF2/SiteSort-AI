@@ -1,91 +1,212 @@
 const { extractTextFromPDF } = require("../utils/pdfParser");
-const { summarizeDocumentBuffer } = require("../utils/vertexGemini");
 const { uploadFileWithOAuth } = require("../utils/driveOauthUploader");
 const UploadHistory = require("../models/UploadHistory");
-
-// 🔍 Basic tag extraction
-function extractTags(text) {
-  const tags = [];
-  const keywords = {
-    finance: ["budget", "cost", "fund", "expense", "financial", "SGD", "USD"],
-    company: ["Pte Ltd", "Ltd", "LLC", "Inc", "Company", "Corporation"],
-    construction: ["architect", "M&E", "structural", "contractor", "project"],
-    urgent: ["immediate", "ASAP", "urgent", "critical"],
-  };
-
-  for (const [label, words] of Object.entries(keywords)) {
-    if (words.some((word) => text.toLowerCase().includes(word.toLowerCase()))) {
-      tags.push(label);
-    }
-  }
-
-  return tags.length ? tags : ["general"];
-}
-
-// 📁 Suggest folder based on tags
-function suggestFolderFromTags(tags) {
-  if (tags.includes("finance")) return "Finance";
-  if (tags.includes("construction")) return "Construction";
-  if (tags.includes("company")) return "Companies";
-  if (tags.includes("urgent")) return "Urgent Matters";
-  return "General";
-}
-
-// 🧠 Analyze the uploaded file
+const { generateSmartTags } = require('../utils/documentAnalyzer');
+const { generateSmartSummary } = require('../utils/summaryGenerator');
 const { google } = require("googleapis");
 const User = require("../models/User");
+
+const { handleGoogleAuthError } = require('../utils/handleGoogleAuth');
+
+async function getSuggestedFolder(userId, tags, content) {
+  const user = await User.findById(userId);
+  if (!user?.googleAccessToken) {
+    return { 
+      path: "General",
+      error: "Google account not connected",
+      requiresAuth: true
+    };
+  }
+
+  try {
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI || "http://localhost:3001/api/auth/google/callback"
+    );
+    
+    oauth2Client.setCredentials({
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken || undefined,
+    });
+    
+    const drive = google.drive({ version: "v3", auth: oauth2Client });
+
+    // Check if this is a financial document
+    const isFinancial = content.toLowerCase().includes('budget') || 
+                       content.toLowerCase().includes('financial') ||
+                       content.toLowerCase().includes('cost') ||
+                       content.toLowerCase().includes('expenditure');
+
+    // Try to find the financials folder first for financial documents
+    if (isFinancial) {
+      // Get the full folder structure
+      const foldersRes = await drive.files.list({
+        q: "mimeType='application/vnd.google-apps.folder' and trashed=false",
+        fields: "files(id, name, parents)",
+        spaces: "drive"
+      });
+      
+      const allFoldersMap = foldersRes.data.files;
+
+      // Find the project folder (e.g., Yewtee Community)
+      const projectFolder = allFoldersMap.find(f => 
+        tags.some(tag => f.name.toLowerCase().includes(tag.toLowerCase())) &&
+        f.name.toLowerCase().includes('community')
+      );
+
+      if (projectFolder) {
+        // Look for a financials folder within the project folder
+        const financialsFolder = allFoldersMap.find(f => 
+          f.parents && f.parents[0] === projectFolder.id && 
+          (f.name.toLowerCase() === 'financials' || 
+           f.name.toLowerCase() === 'financial' ||
+           f.name.toLowerCase().includes('budget'))
+        );
+
+        if (financialsFolder) {
+          // Get the full path to this folder
+          const folderPath = [];
+          let currentFolder = financialsFolder;
+          
+          while (currentFolder) {
+            folderPath.unshift(currentFolder.name);
+            currentFolder = allFoldersMap.find(f => 
+              currentFolder.parents && f.id === currentFolder.parents[0]
+            );
+          }
+
+          return { 
+            path: folderPath.join(' > '),
+            folderId: financialsFolder.id
+          };
+        }
+      }
+    }
+
+    // If we haven't found a financials folder, proceed with normal folder search
+    const foldersQuery = await drive.files.list({
+      q: "mimeType='application/vnd.google-apps.folder' and trashed=false",
+      fields: "files(id, name, parents)",
+      spaces: "drive"
+    });
+
+    const allFolders = allFoldersRes.data.files;
+    if (!allFolders || allFolders.length === 0) {
+      return { path: "General" };
+    }
+
+    // Score each folder based on content and tags
+    let bestMatch = null;
+    let bestScore = -1;
+
+    for (const folder of allFolders) {
+      let score = 0;
+      const folderLower = folder.name.toLowerCase();
+      const contentLower = content.toLowerCase();
+
+      // Document type matching
+      if ((contentLower.includes('budget') || contentLower.includes('financial')) && 
+          folderLower.includes('budget')) score += 10;
+      if (contentLower.includes('rfq') && folderLower.includes('rfq')) score += 10;
+      if (contentLower.includes('invoice') && folderLower.includes('invoice')) score += 10;
+
+      // Quarter matching (e.g., Q2 2025)
+      const quarterMatch = content.match(/Q[1-4]\s*20\d{2}/);
+      if (quarterMatch && folderLower.includes(quarterMatch[0].toLowerCase())) score += 15;
+
+      // Project matching
+      const projectMatch = content.match(/(?:project|phase|development)\s+[^\s,.]{2,30}/i);
+      if (projectMatch && folderLower.includes(projectMatch[0].toLowerCase())) score += 15;
+
+      // Tag matching
+      for (const tag of tags) {
+        if (folderLower.includes(tag.toLowerCase())) score += 5;
+      }
+
+      // Get subfolders for this folder
+      const subFoldersRes = await drive.files.list({
+        q: `'${folder.id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+        fields: "files(id, name)",
+        spaces: "drive"
+      });
+
+      // Check subfolders for better matches
+      for (const subFolder of subFoldersRes.data.files || []) {
+        let subScore = score;
+        const subFolderLower = subFolder.name.toLowerCase();
+
+        // Same checks for subfolder
+        if ((contentLower.includes('budget') || contentLower.includes('financial')) && 
+            subFolderLower.includes('budget')) subScore += 10;
+        if (contentLower.includes('rfq') && subFolderLower.includes('rfq')) subScore += 10;
+        if (quarterMatch && subFolderLower.includes(quarterMatch[0].toLowerCase())) subScore += 15;
+        
+        for (const tag of tags) {
+          if (subFolderLower.includes(tag.toLowerCase())) subScore += 5;
+        }
+
+        // Add bonus for being more specific
+        subScore += 5;
+
+        if (subScore > bestScore) {
+          bestScore = subScore;
+          bestMatch = {
+            path: `${folder.name} > ${subFolder.name}`,
+            folderId: subFolder.id
+          };
+        }
+      }
+
+      // Check if parent folder is better than subfolder
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = {
+          path: folder.name,
+          folderId: folder.id
+        };
+      }
+    }
+
+    return bestMatch || { path: "General" };
+  } catch (err) {
+    console.error('Error getting folder suggestions:', err.message || err);
+    const errorResult = await handleGoogleAuthError(err, user);
+    return {
+      path: "General",
+      ...errorResult
+    };
+  }
+}
 
 exports.analyzeFile = async (req, res) => {
   try {
     const file = req.file;
     const text = await extractTextFromPDF(file.buffer);
-    const summary = await summarizeDocumentBuffer(text, file.originalname);
+    const summary = await generateSmartSummary(text, file.originalname);
 
-    const tags = extractTags(text);
-    const aiSuggestedFolder = suggestFolderFromTags(tags);
+    // Get parent folder ID from request and generate tags
+    const parentFolderId = req.body.parentFolderId;
+    const tags = await generateSmartTags(text, req.user.id, parentFolderId);
+    
+    // Get folder suggestion based on content and available folders
+    const folderSuggestion = await getSuggestedFolder(req.user.id, tags, text);
 
-    // --- Ensure suggestion is a real folder in user's Google Drive ---
-    let suggestedFolder = "General";
-    let availableFolders = [];
-    try {
-      // Get user from DB
-      const user = await User.findById(req.user.id);
-      if (user && user.googleAccessToken) {
-        const oauth2Client = new google.auth.OAuth2();
-        oauth2Client.setCredentials({
-          access_token: user.googleAccessToken,
-          refresh_token: user.googleRefreshToken || undefined,
-        });
-        const drive = google.drive({ version: "v3", auth: oauth2Client });
-
-        // Get root folder (SiteSort AI)
-        const rootFolderRes = await drive.files.list({
-          q: "mimeType='application/vnd.google-apps.folder' and name='SiteSort AI' and trashed=false",
-          fields: "files(id, name)",
-          spaces: "drive",
-        });
-        let parentId = rootFolderRes.data.files[0]?.id;
-        if (parentId) {
-          // List subfolders
-          const subfolderRes = await drive.files.list({
-            q: `'${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-            fields: "files(id, name)",
-            spaces: "drive",
-          });
-          availableFolders = subfolderRes.data.files.map(f => f.name);
-        }
-      }
-    } catch (folderErr) {
-      console.error("[Analyze] Could not fetch user folders:", folderErr.message);
+    if (folderSuggestion.error) {
+      res.status(401).json({
+        error: folderSuggestion.error,
+        message: folderSuggestion.message,
+        requiresReauth: folderSuggestion.requiresReauth
+      });
+      return;
     }
 
-    // Try to match AI suggestion to real folder (case-insensitive)
-    if (availableFolders.length > 0) {
-      const match = availableFolders.find(f => f.toLowerCase() === aiSuggestedFolder.toLowerCase());
-      suggestedFolder = match || availableFolders[0];
-    }
-
-    res.json({ summary, tags, suggestedFolder });
+    res.json({ 
+      summary, 
+      tags, 
+      suggestedFolder: folderSuggestion.path,
+      suggestedFolderId: folderSuggestion.folderId
+    });
   } catch (err) {
     console.error("Analyze error:", err.message);
     res.status(500).json({ error: "AI analysis failed" });

@@ -83,6 +83,7 @@ function Upload() {
   const [tags, setTags] = useState([]);
   const [newTag, setNewTag] = useState("");
   const [suggestedFolder, setSuggestedFolder] = useState("General");
+  const [suggestedFolderId, setSuggestedFolderId] = useState(null);
   const [manualFolder, setManualFolder] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploadHistory, setUploadHistory] = useState([]);
@@ -115,6 +116,12 @@ function Upload() {
       const token = localStorage.getItem("token");
       const formData = new FormData();
       formData.append("file", selectedFile);
+      
+      // Get current folder structure for smart analysis
+      const parentFolderId = manualFolder || null;
+      if (parentFolderId) {
+        formData.append("parentFolderId", parentFolderId);
+      }
 
       const res = await axios.post("http://localhost:3001/api/upload/analyze", formData, {
         headers: {
@@ -123,10 +130,18 @@ function Upload() {
         },
       });
 
-      const { summary, tags, suggestedFolder } = res.data;
+      if (res.data.requiresReauth) {
+        alert(res.data.message);
+        // Redirect to Google re-authentication
+        window.location.href = '/api/auth/google/login';
+        return;
+      }
+
+      const { summary, tags, suggestedFolder, suggestedFolderId } = res.data;
       setSummary(summary);
       setTags(tags);
       setSuggestedFolder(suggestedFolder);
+      setSuggestedFolderId(suggestedFolderId);
       setStep("analyzed");
     } catch (err) {
       console.error("Upload failed:", err.response?.data || err.message);
@@ -147,15 +162,16 @@ function Upload() {
     }
   };
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (forceFolderId = null) => {
     const token = localStorage.getItem("token");
     const formData = new FormData();
     formData.append("file", selectedFile);
-    formData.append("folderId", manualFolder);
+    formData.append("folderId", forceFolderId || manualFolder);
     formData.append("originalName", selectedFile.name);
     formData.append("tags", tags.join(","));
 
-    if (!manualFolder) {
+    // If no folder is forced (from suggested folder button) and no manual folder is selected
+    if (!forceFolderId && !manualFolder) {
       alert("❌ Please select a folder.");
       return;
     }
@@ -283,13 +299,45 @@ function Upload() {
               <Paper sx={{ p: 4, borderRadius: 3 }}>
                 <Typography variant="h6">Folder Recommendation</Typography>
                 <Typography mb={2}>Suggested by AI: <strong>{suggestedFolder}</strong></Typography>
-                <Typography variant="subtitle1">Select Upload Folder</Typography>
+                
+                <Box display="flex" gap={2} mb={3}>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      setManualFolder(suggestedFolderId);
+                      handleConfirm(suggestedFolderId);
+                    }}
+                    sx={{ 
+                      backgroundColor: '#059669', 
+                      '&:hover': { backgroundColor: '#047857' }
+                    }}
+                  >
+                    Upload to Suggested Folder
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => setManualFolder("")}
+                    sx={{ 
+                      borderColor: '#059669',
+                      color: '#059669',
+                      '&:hover': { 
+                        borderColor: '#047857',
+                        backgroundColor: '#F0FDF4'
+                      }
+                    }}
+                  >
+                    Choose Different Folder
+                  </Button>
+                </Box>
+
+                <Typography variant="subtitle1">Or Select Different Folder</Typography>
                 <FolderSelector onSelect={(folderId) => setManualFolder(folderId)} />
 
                 <Box mt={4} textAlign="right">
                   <Button
                     variant="contained"
-                    onClick={handleConfirm}
+                    onClick={() => handleConfirm()}
+                    disabled={!manualFolder}
                     sx={{ backgroundColor: '#10B981', '&:hover': { backgroundColor: '#0f9f76' } }}
                   >
                     Confirm Upload

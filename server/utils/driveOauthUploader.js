@@ -8,7 +8,7 @@ async function uploadFileWithOAuth(userId, fileBuffer, filename, folderId) {
     const oAuth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET,
-        "http://localhost:3001/api/auth/google/callback"
+        process.env.GOOGLE_REDIRECT_URI || "http://localhost:3001/api/auth/google/callback"
     );
 
     oAuth2Client.setCredentials({
