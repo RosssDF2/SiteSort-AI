@@ -23,7 +23,9 @@ export default function BindSuccess() {
           if (data.user) {
             setUser(data.user);
             localStorage.setItem("user", JSON.stringify(data.user));
-            navigate("/profile");
+            const returnUrl = localStorage.getItem('bindReturnUrl') || '/profile';
+            localStorage.removeItem('bindReturnUrl'); // Clean up
+            window.location.href = returnUrl; // Use window.location.href for full page reload
           }
         })
         .catch(err => {

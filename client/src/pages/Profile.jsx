@@ -29,18 +29,35 @@ function Profile() {
 
   useEffect(() => {
     const fetchGoogleLinkStatus = async () => {
-      const token = localStorage.getItem('token');
-      const res = await fetch("http://localhost:3001/api/auth/check-google-link", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
 
-      if (res.ok) {
-        const data = await res.json();
-        setIsGoogleLinked(data.isGoogleLinked);
+        const res = await fetch("http://localhost:3001/api/auth/check-google-link", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setIsGoogleLinked(data.isGoogleLinked);
+          
+          // Update user in localStorage if status changed
+          const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+          if (currentUser.isGoogleLinked !== data.isGoogleLinked) {
+            localStorage.setItem('user', JSON.stringify({
+              ...currentUser,
+              isGoogleLinked: data.isGoogleLinked
+            }));
+          }
+        } else {
+          console.error('Failed to fetch Google link status:', await res.text());
+        }
+      } catch (err) {
+        console.error('Error checking Google link status:', err);
       }
     };
     fetchGoogleLinkStatus();
-  }, []);
+  }, [user?._id]); // Re-run when user changes
 
   useEffect(() => {
     if (urlError === 'google_already_bound' && !errorHandled.current) {
@@ -106,6 +123,12 @@ function Profile() {
             <Box display="flex" alignItems="center" justifyContent="space-between" mt="auto">
               <Button
                 variant="text"
+                sx={{ 
+                  color: '#10B981',
+                  '&:hover': {
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                  }
+                }}
                 onClick={async () => {
                   try {
                     const res = await fetch("http://localhost:3001/api/auth/request-reset", {
@@ -152,7 +175,7 @@ function Profile() {
             }}
           >
             <Box display="flex" alignItems="center" gap={2} mb={2}>
-              <InfoIcon color="primary" sx={{ fontSize: 24 }} />
+              <InfoIcon color="success" sx={{ fontSize: 24 }} />
               <Typography variant="h6" fontWeight="600">Personal Info</Typography>
             </Box>
             <Typography mb={3} color="text.secondary" variant="body1">
@@ -161,13 +184,16 @@ function Profile() {
             <Box sx={{ mt: 'auto' }}>
               <Button 
               variant="contained" 
-              color="primary" 
               onClick={() => navigate("/personalize")}
               sx={{ 
                 borderRadius: 2,
                 textTransform: 'none',
                 px: 3,
-                py: 1
+                py: 1,
+                backgroundColor: '#10B981',
+                '&:hover': {
+                  backgroundColor: '#0f9c6b'
+                }
               }}
             >
               Review personal information
@@ -213,26 +239,48 @@ function Profile() {
                     textTransform: 'none',
                     px: 3,
                     py: 1.5,
-                    backgroundColor: '#4285F4',
+                    backgroundColor: '#10B981',
                     '&:hover': {
-                      backgroundColor: '#3367D6'
+                      backgroundColor: '#0f9c6b'
                     }
                   }}
                   onClick={async () => {
-                    const token = localStorage.getItem("token");
-                    const res = await fetch("http://localhost:3001/api/auth/bind/initiate", {
-                      method: "POST",
-                      headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                      },
-                      credentials: "include"
-                    });
-                    const data = await res.json();
-                    if (res.ok && data.redirectUrl) {
-                      window.location.href = `http://localhost:3001${data.redirectUrl}`;
-                    } else {
-                      alert("❌ Failed to start Google bind: " + (data.error || "Unknown error"));
+                    try {
+                      const token = localStorage.getItem("token");
+                      if (!token) {
+                        alert("❌ You must be logged in to bind your Google account");
+                        return;
+                      }
+
+                      // Save binding state before starting
+                      localStorage.setItem('bindingInProgress', 'true');
+                      localStorage.setItem('bindReturnUrl', window.location.href);
+                      localStorage.setItem('bindStartTime', Date.now().toString());
+
+                      const res = await fetch("http://localhost:3001/api/auth/bind/initiate", {
+                        method: "POST",
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                          "Content-Type": "application/json"
+                        },
+                        credentials: "include"
+                      });
+                      
+                      const data = await res.json();
+                      if (res.ok && data.redirectUrl) {
+                        window.location.href = `http://localhost:3001${data.redirectUrl}`;
+                      } else {
+                        localStorage.removeItem('bindingInProgress');
+                        localStorage.removeItem('bindReturnUrl');
+                        localStorage.removeItem('bindStartTime');
+                        alert("❌ Failed to start Google bind: " + (data.error || "Unknown error"));
+                      }
+                    } catch (err) {
+                      console.error('Error initiating Google bind:', err);
+                      localStorage.removeItem('bindingInProgress');
+                      localStorage.removeItem('bindReturnUrl');
+                      localStorage.removeItem('bindStartTime');
+                      alert("❌ Failed to start Google bind. Please try again.");
                     }
                   }}
                 >
@@ -243,16 +291,40 @@ function Profile() {
                   variant="outlined"
                   color="error"
                   onClick={async () => {
-                    const token = localStorage.getItem("token");
-                    const res = await fetch("http://localhost:3001/api/auth/google/unbind", {
-                      method: "POST",
-                      headers: { Authorization: `Bearer ${token}` }
-                    });
-                    if (res.ok) {
-                      setIsGoogleLinked(false);
-                      alert("✅ Google account unlinked.");
-                    } else {
-                      alert("❌ Failed to unlink.");
+                    try {
+                      const token = localStorage.getItem("token");
+                      if (!token) {
+                        alert("❌ You must be logged in to unlink your Google account");
+                        return;
+                      }
+
+                      const res = await fetch("http://localhost:3001/api/auth/google/unbind", {
+                        method: "POST",
+                        headers: { 
+                          Authorization: `Bearer ${token}`,
+                          "Content-Type": "application/json"
+                        },
+                        credentials: "include"
+                      });
+
+                      const data = await res.json();
+                      if (res.ok) {
+                        setIsGoogleLinked(false);
+                        
+                        // Update user in localStorage
+                        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+                        localStorage.setItem('user', JSON.stringify({
+                          ...currentUser,
+                          isGoogleLinked: false
+                        }));
+                        
+                        alert("✅ Google account unlinked successfully.");
+                      } else {
+                        alert("❌ Failed to unlink: " + (data.error || "Unknown error"));
+                      }
+                    } catch (err) {
+                      console.error('Error unlinking Google account:', err);
+                      alert("❌ Failed to unlink Google account. Please try again.");
                     }
                   }}
                 >
