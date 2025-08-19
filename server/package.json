@@ -19,7 +19,7 @@
     "express": "^5.1.0",
     "express-session": "^1.18.1",
     "googleapis": "^152.0.0",
-    "html-pdf-node": "^1.0.8",
+    "html-pdf-node": "^1.0.7",
     "html2canvas": "^1.4.1",
     "jsonrepair": "^3.13.0",
     "jsonwebtoken": "^9.0.2",
