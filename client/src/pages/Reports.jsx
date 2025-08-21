@@ -64,7 +64,7 @@ function Reports() {
   const handleDelete = async (_id) => {
     if (!window.confirm("Delete this report?")) return;
     try {
-      await axios.delete(`/api/reports/${_id}`, { withCredentials: true });
+      await http.delete(`/reports/${_id}`);
       setReports((prev) => prev.filter((r) => r._id !== _id));
     } catch (err) {
       console.error("Failed to delete report", err);

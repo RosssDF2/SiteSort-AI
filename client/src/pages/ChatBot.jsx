@@ -49,6 +49,51 @@ api.interceptors.request.use(
   }
 );
 
+// Utility: Clean up AI output (remove markdown, asterisks, bullet points, extra whitespace)
+function cleanAISummary(text) {
+  if (!text) return '';
+  let cleaned = text
+    // Remove all bold/italic markdown (greedy, including edge cases)
+    .replace(/\*\*([^*]+)\*\*/g, '$1') // bold
+    .replace(/\*([^*]+)\*/g, '$1') // italic
+    .replace(/__([^_]+)__/g, '$1') // bold (underscore)
+    .replace(/_([^_]+)_/g, '$1') // italic (underscore)
+    // Remove all asterisks not part of a word (inline or at start)
+    .replace(/\s?\*\s?/g, ' ')
+    // Remove leading bullets or dashes
+    .replace(/^\s*[-•]\s+/gm, '')
+    // Remove any remaining markdown headers
+    .replace(/^#+\s+/gm, '')
+    // Remove table rows
+    .replace(/\|.*\|/g, '')
+    // Remove extra newlines and spaces
+    .replace(/\n{2,}/g, '\n')
+    .replace(/\s{2,}/g, ' ');
+
+  // Split into paragraphs (by double newlines or single newlines if no double)
+  let paragraphs = cleaned.split(/\n\s*\n|\n{2,}/).filter(p => p.trim().length > 0);
+  if (paragraphs.length === 1) {
+    // Try splitting by single newlines if only one paragraph
+    paragraphs = cleaned.split(/\n/).filter(p => p.trim().length > 0);
+  }
+
+  // Add label to each paragraph
+  const labels = [
+    'Overview:',
+    'Details:',
+    'Financials:',
+    'Risks/Comments:',
+    'Additional Info:'
+  ];
+  const labeled = paragraphs.map((p, i) => {
+    const label = labels[i] || `Section ${i + 1}:`;
+    return `${label}\n${p.trim()}`;
+  });
+
+  // Join with a blank line between paragraphs
+  return labeled.join('\n\n');
+}
+
 function ChatBot() {
   const { user } = useContext(UserContext);
   const username = user?.username || user?.email?.split("@")[0] || "Guest";
@@ -764,7 +809,7 @@ function ChatBot() {
       console.log("🤖 Received AI response:", data);
       const aiMsg = { 
         sender: "ai", 
-        text: data.text || data, // Support both new and old response format
+        text: cleanAISummary(data.text || data), // Clean up summary
         pdf: data.pdf,
         filename: data.filename,
         timestamp: data.timestamp || new Date().toISOString(),

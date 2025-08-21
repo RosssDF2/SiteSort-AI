@@ -19,12 +19,43 @@ function cleanAndStructureText(text) {
     if (!text) return [];
 
     // Remove excessive newlines and whitespace
-    const cleanedText = text.replace(/\n{3,}/g, '\n\n').trim();
+    let cleaned = text.replace(/\n{3,}/g, '\n\n').trim();
 
-    // Split into sections based on potential headers or bullet points
-    const sections = cleanedText.split(/(?=\n[•#*-]|\n\d+\.|\n[A-Z][^a-z\n:]+:)/);
+    // Remove markdown, asterisks, bullet points, and tables (same as frontend)
+    cleaned = cleaned
+        .replace(/\*\*([^*]+)\*\*/g, '$1') // bold
+        .replace(/\*([^*]+)\*/g, '$1') // italic
+        .replace(/__([^_]+)__/g, '$1') // bold (underscore)
+        .replace(/_([^_]+)_/g, '$1') // italic (underscore)
+        .replace(/\s?\*\s?/g, ' ') // asterisks
+        .replace(/^\s*[-•]\s+/gm, '') // leading bullets
+        .replace(/^#+\s+/gm, '') // markdown headers
+        .replace(/\|.*\|/g, '') // table rows
+        .replace(/\n{2,}/g, '\n')
+        .replace(/\s{2,}/g, ' ');
 
-    return sections.map(section => section.trim()).filter(Boolean);
+    // Split into paragraphs (by double newlines or single newlines if no double)
+    let paragraphs = cleaned.split(/\n\s*\n|\n{2,}/).filter(p => p.trim().length > 0);
+    if (paragraphs.length === 1) {
+        // Try splitting by single newlines if only one paragraph
+        paragraphs = cleaned.split(/\n/).filter(p => p.trim().length > 0);
+    }
+
+    // Add label to each paragraph
+    const labels = [
+        'Overview:',
+        'Details:',
+        'Financials:',
+        'Risks/Comments:',
+        'Additional Info:'
+    ];
+    const labeled = paragraphs.map((p, i) => {
+        const label = labels[i] || `Section ${i + 1}:`;
+        return `${label}\n${p.trim()}`;
+    });
+
+    // Return array of labeled paragraphs (PDF generator will add line spacing)
+    return labeled;
 }
 
 // Add a section with proper styling

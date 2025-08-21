@@ -64,7 +64,7 @@ function Summaries() {
   const handleDelete = async (_id) => {
     if (!window.confirm("Delete this summary?")) return;
     try {
-      await axios.delete(`/api/summaries/${_id}`, { withCredentials: true });
+      await http.delete(`/summaries/${_id}`);
       setSummaries((prev) => prev.filter((s) => s._id !== _id));
     } catch (err) {
       console.error("Failed to delete summary", err);

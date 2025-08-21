@@ -250,7 +250,7 @@ async function askSiteSortAI(prompt) {
                                 `You are SiteSort AI, a smart assistant that helps construction and project teams understand files, reports, and documents.\n\n` +
                                 `Here is your knowledge:\n${context.trim()}\n\n` +
                                 `User asked: "${prompt.trim()}"\n` +
-                                `Respond with clear and professional answers. No intros, just give the useful answer.\n` +
+                                `Write a comprehensive summary as 3-4 well-written paragraphs in natural language. Do NOT use tables, bullet points, lists, or markdown formatting. Synthesize and explain the key points as if writing a report for a manager. No intros, just the useful answer.\n` +
                                 `SiteSort AI:`,
                         },
                     ],
@@ -263,6 +263,19 @@ async function askSiteSortAI(prompt) {
         // Cleanup greeting/intros if AI ignores instruction
         reply = reply.replace(/^(hi|hello|hey|greetings)[.! ]*[\s\n-]*/i, "").trim();
         reply = reply.replace(/^i'?m (sitesort ai|an ai assistant)[\s\S]*?(?=\n|\.|:)/i, "").trim();
+
+        // Remove markdown, asterisks, bullet points, and tables
+        reply = reply.replace(/\*\*([^*]+)\*\*/g, '$1'); // bold
+        reply = reply.replace(/\*([^*]+)\*/g, '$1'); // italic
+        reply = reply.replace(/__([^_]+)__/g, '$1'); // bold (underscore)
+        reply = reply.replace(/_([^_]+)_/g, '$1'); // italic (underscore)
+        reply = reply.replace(/\s?\*\s?/g, ' '); // asterisks
+        reply = reply.replace(/^\s*[-•]\s+/gm, ''); // leading bullets
+        reply = reply.replace(/^#+\s+/gm, ''); // markdown headers
+        reply = reply.replace(/\|.*\|/g, ''); // table rows
+        reply = reply.replace(/\n{2,}/g, '\n'); // collapse multiple newlines
+        reply = reply.replace(/\s{2,}/g, ' '); // collapse extra spaces
+        reply = reply.trim();
 
         if (reply.length < 20 || /^[a-z]/.test(reply)) {
             reply = `I'm SiteSort AI — your assistant for navigating project data, reports, and insights. How can I help today?`;
@@ -335,18 +348,7 @@ async function askSiteSortAIWithFiles(prompt, files) {
                                 `Here is your knowledge:\n${systemContext.trim()}\n\n` +
                                 `${fileContext}\n\n` +
                                 `User asked: "${prompt.trim()}"\n\n` +
-                                `INSTRUCTIONS:\n` +
-                                `- Analyze ALL provided files thoroughly\n` +
-                                `- Combine and cross-reference information from multiple files when applicable\n` +
-                                `- Provide specific insights based on the actual file contents\n` +
-                                `- Create comprehensive analysis that spans across all uploaded documents\n` +
-                                `- Never say you cannot combine information from multiple files - this is your specialty\n` +
-                                `- Give detailed, professional analysis with specific data from the files\n` +
-                                `- Focus on actionable insights and specific findings\n` +
-                                `- NEVER give generic responses about platform limitations\n` +
-                                `- Always work with the files provided and give substantive analysis\n` +
-                                `- Quote specific data, numbers, and details from the files\n\n` +
-                                `Based on the provided files, respond with clear and professional analysis:\n`,
+                                `Write a comprehensive summary as 3-4 well-written paragraphs in natural language. Do NOT use tables, bullet points, lists, or markdown formatting. Synthesize and explain the key points as if writing a report for a manager. No intros, just the useful answer.\n`,
                         },
                     ],
                 },
@@ -355,9 +357,22 @@ async function askSiteSortAIWithFiles(prompt, files) {
 
         let reply = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "❌ No response.";
 
-        // Light cleanup - only remove obvious intro patterns
+        // Cleanup greeting/intros if AI ignores instruction
         reply = reply.replace(/^(hi|hello|hey there)[.! ]*[\s\n]*/i, "").trim();
         reply = reply.replace(/^i'?m sitesort ai[.! ]*[\s\n]*/i, "").trim();
+
+        // Remove markdown, asterisks, bullet points, and tables
+        reply = reply.replace(/\*\*([^*]+)\*\*/g, '$1'); // bold
+        reply = reply.replace(/\*([^*]+)\*/g, '$1'); // italic
+        reply = reply.replace(/__([^_]+)__/g, '$1'); // bold (underscore)
+        reply = reply.replace(/_([^_]+)_/g, '$1'); // italic (underscore)
+        reply = reply.replace(/\s?\*\s?/g, ' '); // asterisks
+        reply = reply.replace(/^\s*[-•]\s+/gm, ''); // leading bullets
+        reply = reply.replace(/^#+\s+/gm, ''); // markdown headers
+        reply = reply.replace(/\|.*\|/g, ''); // table rows
+        reply = reply.replace(/\n{2,}/g, '\n'); // collapse multiple newlines
+        reply = reply.replace(/\s{2,}/g, ' '); // collapse extra spaces
+        reply = reply.trim();
 
         // Ensure substantial response for multi-file analysis
         if (files && files.length > 1 && reply.length < 100) {
