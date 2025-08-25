@@ -142,7 +142,7 @@ export default function Login() {
         p={4}
       >
         <Typography variant="h4" fontWeight={700} mb={3} textAlign="center">
-          Sign in to <span style={{ color: "#10B981" }}>SiteSort</span>
+          Sign in to <span style={{ color: "#9C27B0" }}>SiteSort</span>
         </Typography>
 
         <Box mb={2} width="100%" maxWidth={360}>
@@ -230,10 +230,10 @@ export default function Login() {
             variant="contained"
             sx={{
               mt: 3,
-              backgroundColor: "#10B981",
+              backgroundColor: "#9C27B0",
               borderRadius: 3,
               py: 1.2,
-              "&:hover": { backgroundColor: "#0f9c6b" },
+              "&:hover": { backgroundColor: "#7B1FA2" },
             }}
           >
             SIGN IN
@@ -244,7 +244,7 @@ export default function Login() {
       {/* Right 30% */}
       <Box
         flex={3}
-        bgcolor="#10B981"
+        bgcolor="#9C27B0"
         color="white"
         display="flex"
         flexDirection="column"

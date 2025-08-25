@@ -157,7 +157,7 @@ function Personalize() {
                             <Button
                                 variant="outlined"
                                 component="label"
-                                sx={{ borderColor: "#10B981", color: "#10B981" }}
+                                sx={{ borderColor: "#9C27B0", color: "#9C27B0" }}
                             >
                                 Upload
                                 <input
@@ -283,7 +283,7 @@ function Personalize() {
                         onClick={handleSubmit}
                         disabled={!username}
                         sx={{
-                            backgroundColor: "#10B981",
+                            backgroundColor: "#9C27B0",
                             "&:hover": { backgroundColor: "#0e9e6f" }
                         }}
                     >

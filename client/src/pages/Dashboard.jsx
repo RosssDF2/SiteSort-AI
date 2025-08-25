@@ -3,7 +3,6 @@ import React, { useEffect, useState, useContext } from "react";
 import {
     Typography,
     Grid,
-    CircularProgress,
     Card,
     CardHeader,
     CardContent,
@@ -25,6 +24,7 @@ import {
     Divider,
     IconButton,
 } from "@mui/material";
+import LoadingOverlay from "../components/LoadingOverlay";
 import InsightHistory from "../components/InsightHistory";
 import axios from "axios";
 import MainLayout from "../layouts/MainLayout";
@@ -233,8 +233,14 @@ const Dashboard = () => {
                         sx={{
                             mr: 1,
                             borderRadius: "6px",
-                            backgroundColor: viewMode === "basic" ? "#00796b" : undefined,
-                            color: viewMode === "basic" ? "#fff" : undefined,
+                            backgroundColor: viewMode === "basic" ? "#9C27B0" : undefined,
+                            color: viewMode === "basic" ? "#fff" : "#9C27B0",
+                            transition: 'all 0.3s ease-in-out',
+                            '&:hover': {
+                                transform: 'scale(1.05)',
+                                backgroundColor: viewMode === "basic" ? "#9C27B0" : "rgba(156, 39, 176, 0.1)",
+                            },
+                            boxShadow: viewMode === "basic" ? "0 4px 12px rgba(156, 39, 176, 0.3)" : "none",
                         }}
                     >
                         Basic
@@ -244,8 +250,14 @@ const Dashboard = () => {
                         variant={viewMode === "advanced" ? "contained" : "outlined"}
                         sx={{
                             borderRadius: "6px",
-                            backgroundColor: viewMode === "advanced" ? "#00796b" : undefined,
-                            color: viewMode === "advanced" ? "#fff" : undefined,
+                            backgroundColor: viewMode === "advanced" ? "#9C27B0" : undefined,
+                            color: viewMode === "advanced" ? "#fff" : "#9C27B0",
+                            transition: 'all 0.3s ease-in-out',
+                            '&:hover': {
+                                transform: 'scale(1.05)',
+                                backgroundColor: viewMode === "advanced" ? "#9C27B0" : "rgba(156, 39, 176, 0.1)",
+                            },
+                            boxShadow: viewMode === "advanced" ? "0 4px 12px rgba(156, 39, 176, 0.3)" : "none",
                         }}
                     >
                         Advance
@@ -275,7 +287,22 @@ const Dashboard = () => {
                             value={selectedProjectId}
                             onChange={(e) => setSelectedProjectId(e.target.value)}
                             displayEmpty
-                            sx={{ minWidth: 260 }}
+                            sx={{ 
+                                minWidth: 260,
+                                '& .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: 'rgba(156, 39, 176, 0.3)',
+                                },
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: 'rgba(156, 39, 176, 0.6)',
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#9C27B0',
+                                },
+                                transition: 'all 0.3s ease-in-out',
+                                '&:hover': {
+                                    transform: 'translateY(-2px)',
+                                },
+                            }}
                         >
                             <MenuItem value="">
                                 <em>Select a project…</em>
@@ -301,22 +328,53 @@ const Dashboard = () => {
                                     sx={{
                                         p: 2,
                                         borderRadius: "12px",
-                                        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                                        height: 300, // fixed uniform height
+                                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                        height: 300,
                                         display: "flex",
                                         flexDirection: "column",
+                                        transition: "all 0.3s ease-in-out",
+                                        "&:hover": {
+                                            transform: "translateY(-4px)",
+                                            boxShadow: "0 8px 24px rgba(156, 39, 176, 0.15)",
+                                        },
+                                        backgroundColor: "rgba(255, 255, 255, 0.8)",
+                                        backdropFilter: "blur(10px)",
                                     }}
                                 >
                                     <CardContent sx={{ flexGrow: 1, overflowY: "auto", pt: 0 }}>
                                         {!selectedProjectId ? (
-                                            <Alert severity="info">Pick a project to view its dashboard.</Alert>
+                                            <Alert 
+                                                severity="info"
+                                                sx={{
+                                                    transition: 'all 0.3s ease-in-out',
+                                                    '&:hover': {
+                                                        transform: 'translateY(-2px)',
+                                                        boxShadow: '0 4px 12px rgba(156, 39, 176, 0.15)',
+                                                    },
+                                                    borderLeft: '4px solid #9C27B0'
+                                                }}
+                                            >
+                                                Pick a project to view its dashboard.
+                                            </Alert>
                                         ) : projectLoading ? (
                                             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: 1 }}>
-                                                <CircularProgress />
+                                                <Box sx={{ width: 100, height: 100 }}>
+                                                    <LoadingOverlay />
+                                                </Box>
                                             </Box>
                                         ) : (
                                             <>
-                                                <Typography variant="h6" gutterBottom sx={{ pt: 1 }}>
+                                                <Typography variant="h6" gutterBottom 
+                                                    sx={{ 
+                                                        pt: 1,
+                                                        color: '#9C27B0',
+                                                        fontWeight: 600,
+                                                        transition: 'all 0.3s ease-in-out',
+                                                        '&:hover': {
+                                                            transform: 'scale(1.02)',
+                                                            textShadow: '0 0 8px rgba(156, 39, 176, 0.3)',
+                                                        }
+                                                    }}>
                                                     📊 Project Activity
                                                 </Typography>
 
@@ -330,14 +388,32 @@ const Dashboard = () => {
                                                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
                                                     {/* RFIs */}
                                                     <Box>
-                                                        <Typography variant="subtitle1" gutterBottom>📂 RFIs</Typography>
+                                                        <Typography variant="subtitle1" gutterBottom
+                                                            sx={{
+                                                                color: '#9C27B0',
+                                                                fontWeight: 500,
+                                                                transition: 'all 0.3s ease-in-out',
+                                                                '&:hover': {
+                                                                    transform: 'scale(1.02)',
+                                                                    opacity: 0.9
+                                                                }
+                                                            }}>
+                                                            📂 RFIs
+                                                        </Typography>
                                                         {projectStats.rfiTree?.length ? (
                                                             <List dense sx={{ m: 0 }}>
                                                                 {projectStats.rfiTree.map((f, idx) => (
                                                                     <ListItem disableGutters key={idx} sx={{ py: 0.25 }}>
                                                                         <ListItemButton
                                                                             onClick={() => openMessages("RFI", f.fileName, f.messages || [])}
-                                                                            sx={{ borderRadius: 1 }}
+                                                                            sx={{ 
+                                                                                borderRadius: 1,
+                                                                                transition: "all 0.2s ease-in-out",
+                                                                                "&:hover": {
+                                                                                    backgroundColor: "rgba(156, 39, 176, 0.08)",
+                                                                                    transform: "scale(1.02)",
+                                                                                }
+                                                                            }}
                                                                         >
                                                                             <ListItemText
                                                                                 primaryTypographyProps={{ variant: "body2" }}
@@ -354,14 +430,32 @@ const Dashboard = () => {
 
                                                     {/* RFQs */}
                                                     <Box>
-                                                        <Typography variant="subtitle1" gutterBottom>📂 RFQs</Typography>
+                                                        <Typography variant="subtitle1" gutterBottom
+                                                            sx={{
+                                                                color: '#9C27B0',
+                                                                fontWeight: 500,
+                                                                transition: 'all 0.3s ease-in-out',
+                                                                '&:hover': {
+                                                                    transform: 'scale(1.02)',
+                                                                    opacity: 0.9
+                                                                }
+                                                            }}>
+                                                            📂 RFQs
+                                                        </Typography>
                                                         {projectStats.rfqTree?.length ? (
                                                             <List dense sx={{ m: 0 }}>
                                                                 {projectStats.rfqTree.map((f, idx) => (
                                                                     <ListItem disableGutters key={idx} sx={{ py: 0.25 }}>
                                                                         <ListItemButton
                                                                             onClick={() => openMessages("RFQ", f.fileName, f.messages || [])}
-                                                                            sx={{ borderRadius: 1 }}
+                                                                            sx={{ 
+                                                                                borderRadius: 1,
+                                                                                transition: "all 0.2s ease-in-out",
+                                                                                "&:hover": {
+                                                                                    backgroundColor: "rgba(156, 39, 176, 0.08)",
+                                                                                    transform: "scale(1.02)",
+                                                                                }
+                                                                            }}
                                                                         >
                                                                             <ListItemText
                                                                                 primaryTypographyProps={{ variant: "body2" }}
@@ -779,14 +873,6 @@ const Dashboard = () => {
                     )}
                 </DialogActions>
             </Dialog>
-            {/* Global loading overlay when switching projects */}
-            <Backdrop
-                open={projectLoading}
-                sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 2, backdropFilter: "blur(2px)" }}
-            >
-                <CircularProgress color="inherit" />
-            </Backdrop>
-
         </MainLayout>
     );
 };

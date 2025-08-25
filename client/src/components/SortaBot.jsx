@@ -87,7 +87,20 @@ function SortaBot() {
             }}
         >
             {open && (
-                <Box sx={{ transform: 'translateY(-48px)' }}>
+                <Box sx={{
+                    transform: 'translateY(-48px)',
+                    animation: 'slideIn 0.3s ease-out',
+                    '@keyframes slideIn': {
+                        '0%': {
+                            opacity: 0,
+                            transform: 'translateY(20px)'
+                        },
+                        '100%': {
+                            opacity: 1,
+                            transform: 'translateY(-48px)'
+                        }
+                    }
+                }}>
                     <Paper elevation={6} sx={{
                         width: 460,
                         height: 550,
@@ -95,23 +108,97 @@ function SortaBot() {
                         flexDirection: 'column',
                         p: 2,
                         borderRadius: 3,
-                        boxShadow: 6
+                        boxShadow: '0 12px 28px rgba(0, 0, 0, 0.12)',
+                        bgcolor: '#FFFFFF',
+                        border: '1px solid rgba(156, 39, 176, 0.1)',
                     }}>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                            <Typography variant="h6">Ask Sorta</Typography>
-                            <IconButton onClick={() => setOpen(false)} size="small"><CloseIcon /></IconButton>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Box display="flex" alignItems="center" gap={1}>
+                                <Box
+                                    component="img"
+                                    src="/sorta-bot.png"
+                                    alt="Sorta Bot"
+                                    sx={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: '50%',
+                                        border: '2px solid #FF1493',
+                                    }}
+                                />
+                                <Typography variant="h6" sx={{ color: '#FF1493', fontWeight: 600 }}>
+                                    Ask Sorta
+                                </Typography>
+                            </Box>
+                            <IconButton 
+                                onClick={() => setOpen(false)} 
+                                size="small"
+                                sx={{
+                                    color: '#9C27B0',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(156, 39, 176, 0.1)'
+                                    }
+                                }}
+                            >
+                                <CloseIcon />
+                            </IconButton>
                         </Box>
 
-                        <Box flexGrow={1} overflow="auto" mb={1} sx={{ bgcolor: '#F3F4F6', borderRadius: 1, p: 1 }}>
+                        <Box 
+                            flexGrow={1} 
+                            overflow="auto" 
+                            mb={2} 
+                            sx={{ 
+                                bgcolor: '#F8F9FB',
+                                borderRadius: 2,
+                                p: 2,
+                                '&::-webkit-scrollbar': {
+                                    width: '8px',
+                                },
+                                '&::-webkit-scrollbar-track': {
+                                    backgroundColor: '#F8F9FB',
+                                },
+                                '&::-webkit-scrollbar-thumb': {
+                                    backgroundColor: '#E0E7FF',
+                                    borderRadius: '4px',
+                                    '&:hover': {
+                                        backgroundColor: '#C7D2FE',
+                                    },
+                                },
+                            }}
+                        >
                             {chatLog.map((msg, i) => (
-                                <Box key={i} textAlign={msg.from === 'user' ? 'right' : 'left'} mb={1}>
+                                <Box 
+                                    key={i} 
+                                    textAlign={msg.from === 'user' ? 'right' : 'left'} 
+                                    mb={2}
+                                    sx={{
+                                        animation: 'fadeIn 0.3s ease-out',
+                                        '@keyframes fadeIn': {
+                                            '0%': {
+                                                opacity: 0,
+                                                transform: 'translateY(10px)'
+                                            },
+                                            '100%': {
+                                                opacity: 1,
+                                                transform: 'translateY(0)'
+                                            }
+                                        }
+                                    }}
+                                >
                                     <Paper sx={{
                                         display: 'inline-block',
-                                        px: 1.5,
-                                        py: 1,
-                                        bgcolor: msg.from === 'user' ? '#10B981' : '#E5E7EB',
+                                        maxWidth: '80%',
+                                        px: 2,
+                                        py: 1.5,
+                                        bgcolor: msg.from === 'user' ? '#FF1493' : 'white',
                                         color: msg.from === 'user' ? 'white' : 'black',
-                                        borderRadius: 2,
+                                        borderRadius: msg.from === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+                                        boxShadow: msg.from === 'user' 
+                                            ? 'none' 
+                                            : '0 2px 8px rgba(0, 0, 0, 0.06)',
+                                        border: msg.from === 'user'
+                                            ? 'none'
+                                            : '1px solid rgba(156, 39, 176, 0.1)',
                                     }}>
                                         <Typography variant="body2">
                                             {msg.text.split('\n').map((line, idx) => {
@@ -174,13 +261,41 @@ function SortaBot() {
                             <TextField
                                 size="small"
                                 variant="outlined"
-                                placeholder="Ask a question..."
+                                placeholder="Ask me anything..."
                                 fullWidth
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        borderRadius: 3,
+                                        '& fieldset': {
+                                            borderColor: 'rgba(156, 39, 176, 0.2)',
+                                        },
+                                        '&:hover fieldset': {
+                                            borderColor: '#FF1493',
+                                        },
+                                        '&.Mui-focused fieldset': {
+                                            borderColor: '#FF1493',
+                                        },
+                                    },
+                                }}
                             />
-                            <Button variant="contained" onClick={handleSend}>Send</Button>
+                            <Button 
+                                variant="contained" 
+                                onClick={handleSend}
+                                sx={{
+                                    borderRadius: 3,
+                                    px: 3,
+                                    bgcolor: '#FF1493',
+                                    '&:hover': {
+                                        bgcolor: '#FF1493',
+                                        filter: 'brightness(0.9)',
+                                    },
+                                }}
+                            >
+                                Send
+                            </Button>
                         </Box>
                     </Paper>
 
@@ -188,14 +303,99 @@ function SortaBot() {
             )}
 
             {!open && (
-                <Box display="flex" alignItems="flex-end" gap={2}>
+                <Box 
+                    display="flex" 
+                    alignItems="flex-end" 
+                    gap={2}
+                    sx={{
+                        animation: 'bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+                        '@keyframes bounceIn': {
+                            '0%': {
+                                opacity: 0,
+                                transform: 'scale(0.3)'
+                            },
+                            '50%': {
+                                transform: 'scale(1.05)'
+                            },
+                            '70%': {
+                                transform: 'scale(0.9)'
+                            },
+                            '100%': {
+                                opacity: 1,
+                                transform: 'scale(1)'
+                            }
+                        }
+                    }}
+                >
                     {/* Text Bubble */}
                     <Box sx={{ mb: 3 }}>
-                        <Paper elevation={4} sx={{ p: 2 }}>
-                            <Typography sx={{ fontWeight: 500, mb: 1 }}>
-                                Hi! I'm Sorta!<br />Need help using the site?
-                            </Typography>
-                            <Button variant="outlined" onClick={() => setOpen(true)}>
+                        <Paper 
+                            elevation={6} 
+                            sx={{ 
+                                p: 2.5,
+                                borderRadius: 4,
+                                bgcolor: '#FFFFFF',
+                                border: '1px solid rgba(156, 39, 176, 0.1)',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+                                position: 'relative',
+                                '&:after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: '-12px',
+                                    right: '12px',
+                                    width: 0,
+                                    height: 0,
+                                    borderLeft: '12px solid transparent',
+                                    borderRight: '12px solid transparent',
+                                    borderTop: '12px solid #FFFFFF',
+                                    filter: 'drop-shadow(0 4px 4px rgba(0, 0, 0, 0.08))'
+                                }
+                            }}
+                        >
+                            <Box display="flex" alignItems="center" gap={2} mb={2}>
+                                <Box
+                                    component="img"
+                                    src="/sorta-bot.png"
+                                    alt="Sorta Bot"
+                                    sx={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: '50%',
+                                        border: '2px solid #FF1493',
+                                    }}
+                                />
+                                <Typography sx={{ 
+                                    fontWeight: 600,
+                                    color: '#FF1493',
+                                    fontSize: '1.1rem',
+                                }}>
+                                    Hi! I'm Sorta!<br />
+                                    <span style={{ 
+                                        fontSize: '0.9rem',
+                                        color: '#666',
+                                        fontWeight: 400 
+                                    }}>
+                                        Need help using the site?
+                                    </span>
+                                </Typography>
+                            </Box>
+                            <Button 
+                                variant="contained"
+                                onClick={() => setOpen(true)}
+                                fullWidth
+                                sx={{
+                                    borderRadius: 3,
+                                    py: 1.2,
+                                    bgcolor: '#FF1493',
+                                    fontWeight: 600,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        bgcolor: '#FF1493',
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 6px 20px rgba(255, 20, 147, 0.4)',
+                                    }
+                                }}
+                            >
                                 ASK ME ANYTHING!
                             </Button>
                         </Paper>

@@ -124,8 +124,8 @@ export default function ResetPassword() {
                                 mt: 3,
                                 py: 1.2,
                                 borderRadius: 3,
-                                backgroundColor: "#10B981",
-                                "&:hover": { backgroundColor: "#0f9c6b" }
+                                backgroundColor: "#9C27B0",
+                                "&:hover": { backgroundColor: "#7B1FA2" }
                             }}
                         >
                             Reset Password

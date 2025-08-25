@@ -345,7 +345,7 @@ function ChatBot() {
 
   // Get file icon based on mime type
   const getFileIcon = (mimeType) => {
-    if (mimeType === 'application/vnd.google-apps.folder') return <FolderIcon sx={{ color: '#10B981' }} />;
+    if (mimeType === 'application/vnd.google-apps.folder') return <FolderIcon sx={{ color: '#9C27B0' }} />;
     if (mimeType === 'application/pdf') return <PictureAsPdfIcon sx={{ color: '#f44336' }} />;
     if (mimeType.includes('text') || mimeType === 'application/vnd.google-apps.document') return <DescriptionIcon sx={{ color: '#2196f3' }} />;
     return <DescriptionIcon sx={{ color: '#757575' }} />;
@@ -1049,7 +1049,7 @@ function ChatBot() {
                 <Box sx={{ 
                   textAlign: "center", 
                   mb: 4,
-                  background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                  background: "linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)",
                   backgroundClip: "text",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent"
@@ -1084,8 +1084,8 @@ function ChatBot() {
                     to="/reports" 
                     variant="outlined" 
                     sx={{ 
-                      color: "#10B981", 
-                      borderColor: "#10B981",
+                      color: "#9C27B0", 
+                      borderColor: "#9C27B0",
                       borderRadius: 2,
                       textTransform: "none",
                       fontWeight: 500,
@@ -1093,10 +1093,10 @@ function ChatBot() {
                       py: 1,
                       transition: "all 0.2s ease-in-out",
                       "&:hover": {
-                        bgcolor: "#10B981",
+                        bgcolor: "#FF1493",
                         color: "white",
                         transform: "translateY(-1px)",
-                        boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)"
+                        boxShadow: "0 4px 12px rgba(255, 20, 147, 0.3)"
                       }
                     }}
                   >
@@ -1107,8 +1107,8 @@ function ChatBot() {
                     to="/summaries" 
                     variant="outlined" 
                     sx={{ 
-                      color: "#10B981", 
-                      borderColor: "#10B981",
+                      color: "#9C27B0", 
+                      borderColor: "#9C27B0",
                       borderRadius: 2,
                       textTransform: "none",
                       fontWeight: 500,
@@ -1116,10 +1116,10 @@ function ChatBot() {
                       py: 1,
                       transition: "all 0.2s ease-in-out",
                       "&:hover": {
-                        bgcolor: "#10B981",
+                        bgcolor: "#FF1493",
                         color: "white",
                         transform: "translateY(-1px)",
-                        boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)"
+                        boxShadow: "0 4px 12px rgba(255, 20, 147, 0.3)"
                       }
                     }}
                   >
@@ -1133,14 +1133,14 @@ function ChatBot() {
                       textAlign: "center", 
                       mb: 4,
                       p: 3,
-                      bgcolor: "rgba(16, 185, 129, 0.05)",
+                      bgcolor: "rgba(156, 39, 176, 0.05)",
                       borderRadius: 3,
-                      border: "1px solid rgba(16, 185, 129, 0.1)"
+                      border: "1px solid rgba(156, 39, 176, 0.1)"
                     }}>
                       <Typography
                         variant="h6"
                         sx={{ 
-                          color: "#10B981", 
+                          color: "#FF1493", 
                           mb: 2,
                           fontWeight: 600
                         }}
@@ -1184,19 +1184,19 @@ function ChatBot() {
                           startIcon={qp.icon}
                           onClick={() => sendMessage(qp.label)}
                           sx={{ 
-                            background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                            background: "linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)",
                             color: "white",
                             borderRadius: 2,
                             textTransform: "none",
                             fontWeight: 500,
                             px: 3,
                             py: 1.5,
-                            boxShadow: "0 2px 8px rgba(16, 185, 129, 0.2)",
+                            boxShadow: "0 2px 8px rgba(156, 39, 176, 0.2)",
                             transition: "all 0.2s ease-in-out",
                             "&:hover": {
-                              background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                              background: "linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)",
                               transform: "translateY(-2px)",
-                              boxShadow: "0 4px 16px rgba(16, 185, 129, 0.3)"
+                              boxShadow: "0 4px 16px rgba(156, 39, 176, 0.3)"
                             }
                           }}
                         >
@@ -1223,8 +1223,8 @@ function ChatBot() {
                         width: 32, 
                         height: 32, 
                         borderRadius: "50%", 
-                        bgcolor: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
-                        background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                        bgcolor: "linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)",
+                        background: "linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)",
                         display: "flex", 
                         alignItems: "center", 
                         justifyContent: "center", 
@@ -1243,19 +1243,19 @@ function ChatBot() {
                         maxWidth: "75%",
                         borderRadius: msg.sender === "user" ? "20px 20px 4px 20px" : "20px 20px 20px 4px",
                         background: msg.sender === "user" 
-                          ? "linear-gradient(135deg, #10B981 0%, #059669 100%)" 
+                          ? "linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)" 
                           : "#ffffff",
                         color: msg.sender === "user" ? "white" : "#374151",
                         border: msg.sender === "ai" ? "1px solid #e5e7eb" : "none",
                         boxShadow: msg.sender === "user" 
-                          ? "0 2px 12px rgba(16, 185, 129, 0.2)" 
+                          ? "0 2px 12px rgba(156, 39, 176, 0.2)" 
                           : "0 2px 12px rgba(0, 0, 0, 0.05)",
                         position: 'relative',
                         transition: "all 0.2s ease-in-out",
                         "&:hover": {
                           transform: "translateY(-1px)",
                           boxShadow: msg.sender === "user" 
-                            ? "0 4px 16px rgba(16, 185, 129, 0.3)" 
+                            ? "0 4px 16px rgba(156, 39, 176, 0.3)" 
                             : "0 4px 16px rgba(0, 0, 0, 0.1)"
                         }
                       }}
@@ -1266,14 +1266,14 @@ function ChatBot() {
                           alignItems: 'center', 
                           mb: 1,
                           p: 1,
-                          bgcolor: msg.sender === "user" ? "rgba(255,255,255,0.1)" : "rgba(16, 185, 129, 0.1)",
+                          bgcolor: msg.sender === "user" ? "rgba(255,255,255,0.1)" : "rgba(156, 39, 176, 0.1)",
                           borderRadius: 1,
-                          border: `1px solid ${msg.sender === "user" ? "rgba(255,255,255,0.2)" : "rgba(16, 185, 129, 0.2)"}`
+                          border: `1px solid ${msg.sender === "user" ? "rgba(255,255,255,0.2)" : "rgba(156, 39, 176, 0.2)"}`
                         }}>
                           <AttachFileIcon sx={{ 
                             fontSize: 16, 
                             mr: 1, 
-                            color: msg.sender === "user" ? "white" : '#10B981' 
+                            color: msg.sender === "user" ? "white" : '#9C27B0' 
                           }} />
                           <Typography 
                             variant="caption" 
@@ -1381,11 +1381,11 @@ function ChatBot() {
                                   onClick={() => handlePdfOperation(msg, 'download')}
                                   disabled={pdfLoading}
                                   sx={{
-                                    color: '#10B981',
-                                    borderColor: '#10B981',
+                                    color: '#9C27B0',
+                                    borderColor: '#9C27B0',
                                     '&:hover': {
-                                      borderColor: '#059669',
-                                      backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                                      borderColor: '#7B1FA2',
+                                      backgroundColor: 'rgba(156, 39, 176, 0.1)'
                                     },
                                     '&:disabled': {
                                       borderColor: '#E5E7EB',
@@ -1416,9 +1416,9 @@ function ChatBot() {
                                       size="small"
                                       label={`${msg.metadata.fileCount} file(s)`}
                                       sx={{
-                                        bgcolor: 'rgba(16, 185, 129, 0.1)',
-                                        color: '#10B981',
-                                        border: '1px solid #10B981',
+                                        bgcolor: 'rgba(156, 39, 176, 0.1)',
+                                        color: '#9C27B0',
+                                        border: '1px solid #9C27B0',
                                         fontWeight: 500
                                       }}
                                     />
@@ -1490,7 +1490,7 @@ function ChatBot() {
                         height: 32, 
                         borderRadius: "50%", 
                         bgcolor: "#f3f4f6",
-                        border: "2px solid #10B981",
+                        border: "2px solid #9C27B0",
                         display: "flex", 
                         alignItems: "center", 
                         justifyContent: "center", 
@@ -1498,7 +1498,7 @@ function ChatBot() {
                         mb: 0.5,
                         fontSize: "14px",
                         fontWeight: "bold",
-                        color: "#10B981"
+                        color: "#9C27B0"
                       }}>
                         {username.charAt(0).toUpperCase()}
                       </Box>
@@ -1528,13 +1528,13 @@ function ChatBot() {
                       sx={{ 
                         p: 2, 
                         borderRadius: 3, 
-                        bgcolor: 'rgba(16, 185, 129, 0.05)',
-                        border: '1px solid rgba(16, 185, 129, 0.2)',
+                        bgcolor: 'rgba(156, 39, 176, 0.05)',
+                        border: '1px solid rgba(156, 39, 176, 0.2)',
                         backdropFilter: "blur(8px)"
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                        <Typography variant="body2" color="#10B981" sx={{ mr: 2, fontWeight: 600 }}>
+                        <Typography variant="body2" color="#9C27B0" sx={{ mr: 2, fontWeight: 600 }}>
                           📎 {attachedFiles.length} file(s) attached
                         </Typography>
                         <Button 
@@ -1563,10 +1563,10 @@ function ChatBot() {
                                 onChange={(e) => setAutoClearFiles(e.target.checked)}
                                 sx={{
                                   '& .MuiSwitch-switchBase.Mui-checked': {
-                                    color: '#10B981',
+                                    color: '#9C27B0',
                                   },
                                   '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                    backgroundColor: '#10B981',
+                                    backgroundColor: '#9C27B0',
                                   },
                                 }}
                               />
@@ -1590,21 +1590,21 @@ function ChatBot() {
                             size="small"
                             sx={{ 
                               bgcolor: 'white',
-                              border: '1px solid #10B981',
+                              border: '1px solid #9C27B0',
                               borderRadius: 2,
                               fontWeight: 500,
                               '& .MuiChip-deleteIcon': {
-                                color: '#10B981',
+                                color: '#9C27B0',
                                 '&:hover': {
                                   color: '#ef4444'
                                 }
                               },
                               '& .MuiChip-icon': {
-                                color: '#10B981'
+                                color: '#9C27B0'
                               },
                               transition: "all 0.2s ease-in-out",
                               "&:hover": {
-                                bgcolor: 'rgba(16, 185, 129, 0.05)',
+                                bgcolor: 'rgba(156, 39, 176, 0.05)',
                                 transform: "translateY(-1px)"
                               }
                             }}
@@ -1626,11 +1626,11 @@ function ChatBot() {
                     bgcolor: "white",
                     transition: "all 0.2s ease-in-out",
                     "&:focus-within": {
-                      borderColor: "#10B981",
-                      boxShadow: "0 0 0 3px rgba(16, 185, 129, 0.1)"
+                      borderColor: "#9C27B0",
+                      boxShadow: "0 0 0 3px rgba(156, 39, 176, 0.1)"
                     },
                     "&:hover": {
-                      borderColor: "#10B981"
+                      borderColor: "#9C27B0"
                     }
                   }}
                 >
@@ -1672,13 +1672,13 @@ function ChatBot() {
                     }}
                     disabled={uploading || loadingFileContent}
                     sx={{ 
-                      color: attachedFiles.length > 0 ? '#10B981' : '#6b7280',
-                      bgcolor: attachedFiles.length > 0 ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                      color: attachedFiles.length > 0 ? '#9C27B0' : '#6b7280',
+                      bgcolor: attachedFiles.length > 0 ? 'rgba(156, 39, 176, 0.1)' : 'transparent',
                       borderRadius: 2,
                       transition: "all 0.2s ease-in-out",
                       "&:hover": {
-                        bgcolor: 'rgba(16, 185, 129, 0.1)',
-                        color: '#10B981',
+                        bgcolor: 'rgba(156, 39, 176, 0.1)',
+                        color: '#9C27B0',
                         transform: "scale(1.05)"
                       }
                     }}
@@ -1690,7 +1690,7 @@ function ChatBot() {
                           position: 'absolute', 
                           width: 20, 
                           height: 20, 
-                          border: '2px solid #10B981', 
+                          border: '2px solid #9C27B0', 
                           borderTop: '2px solid transparent', 
                           borderRadius: '50%', 
                           animation: 'spin 1s linear infinite' 
@@ -1703,14 +1703,14 @@ function ChatBot() {
                     disabled={uploading || loadingFileContent || !input.trim()}
                     sx={{ 
                       ml: 1, 
-                      background: input.trim() ? "linear-gradient(135deg, #10B981 0%, #059669 100%)" : "#e5e7eb",
+                      background: input.trim() ? "linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)" : "#e5e7eb",
                       color: input.trim() ? "#fff" : "#9ca3af",
                       borderRadius: 2,
                       transition: "all 0.2s ease-in-out",
                       "&:hover": {
-                        background: input.trim() ? "linear-gradient(135deg, #059669 0%, #047857 100%)" : "#d1d5db",
+                        background: input.trim() ? "linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)" : "#d1d5db",
                         transform: input.trim() ? "scale(1.05)" : "none",
-                        boxShadow: input.trim() ? "0 4px 12px rgba(16, 185, 129, 0.3)" : "none"
+                        boxShadow: input.trim() ? "0 4px 12px rgba(156, 39, 176, 0.3)" : "none"
                       },
                       "&:disabled": {
                         background: "#e5e7eb",
@@ -1822,7 +1822,7 @@ function ChatBot() {
                         textTransform: 'none',
                         fontSize: '0.8rem',
                         color: '#10B981',
-                        '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.1)' }
+                        '&:hover': { bgcolor: 'rgba(156, 39, 176, 0.1)' }
                       }}
                     >
                       Select All
@@ -1849,12 +1849,12 @@ function ChatBot() {
                 <Box sx={{ 
                   mb: 2, 
                   p: 2, 
-                  bgcolor: 'rgba(16, 185, 129, 0.05)', 
+                  bgcolor: 'rgba(156, 39, 176, 0.05)', 
                   borderRadius: 2,
-                  border: '1px solid rgba(16, 185, 129, 0.2)'
+                  border: '1px solid rgba(156, 39, 176, 0.2)'
                 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="body2" sx={{ color: '#10B981', fontWeight: 600 }}>
+                    <Typography variant="body2" sx={{ color: '#9C27B0', fontWeight: 600 }}>
                       📎 {selectedFiles.length} file(s) selected
                     </Typography>
                     <Typography variant="caption" color="textSecondary">
@@ -1871,7 +1871,7 @@ function ChatBot() {
                         size="small"
                         sx={{
                           bgcolor: 'white',
-                          border: '1px solid #10B981',
+                          border: '1px solid #9C27B0',
                           borderRadius: 2,
                           '& .MuiChip-deleteIcon': {
                             color: '#10B981',
@@ -1906,17 +1906,17 @@ function ChatBot() {
                         }}
                         sx={{
                           bgcolor: isSelected 
-                            ? 'rgba(16, 185, 129, 0.1)' 
+                            ? 'rgba(156, 39, 176, 0.1)' 
                             : 'transparent',
                           border: isSelected 
-                            ? '2px solid #10B981' 
+                            ? '2px solid #9C27B0' 
                             : '2px solid transparent',
                           borderRadius: 1,
                           mb: 0.5,
                           transition: 'all 0.2s ease-in-out',
                           '&:hover': { 
                             bgcolor: isSelected 
-                              ? 'rgba(16, 185, 129, 0.15)' 
+                              ? 'rgba(156, 39, 176, 0.15)' 
                               : 'rgba(0, 0, 0, 0.04)',
                             transform: 'translateX(4px)'
                           },
@@ -1931,7 +1931,7 @@ function ChatBot() {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <Typography sx={{ 
                                 fontWeight: isSelected ? 600 : 400,
-                                color: isSelected ? '#10B981' : 'inherit'
+                                color: isSelected ? '#9C27B0' : 'inherit'
                               }}>
                                 {file.name}
                               </Typography>
@@ -1950,7 +1950,7 @@ function ChatBot() {
                                   sx={{ 
                                     fontSize: '0.7rem', 
                                     height: 20,
-                                    bgcolor: '#10B981',
+                                    bgcolor: '#9C27B0',
                                     color: 'white'
                                   }}
                                 />
@@ -2005,7 +2005,7 @@ function ChatBot() {
             onClick={handleAttachFiles}
             disabled={selectedFiles.length === 0 || loadingFileContent}
             variant="contained"
-            sx={{ bgcolor: "#10B981" }}
+            sx={{ bgcolor: "#9C27B0" }}
           >
             {loadingFileContent ? "Loading..." : `Add ${selectedFiles.length} file(s) to chat`}
           </Button>
@@ -2021,10 +2021,26 @@ function ChatBot() {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => handleSave("summaries")} color="primary">
+          <Button 
+            onClick={() => handleSave("summaries")}
+            sx={{
+              color: '#9C27B0',
+              '&:hover': {
+                backgroundColor: 'rgba(156, 39, 176, 0.1)'
+              }
+            }}
+          >
             Save as Summary
           </Button>
-          <Button onClick={() => handleSave("reports")} color="primary">
+          <Button 
+            onClick={() => handleSave("reports")}
+            sx={{
+              color: '#9C27B0',
+              '&:hover': {
+                backgroundColor: 'rgba(156, 39, 176, 0.1)'
+              }
+            }}
+          >
             Save as Report
           </Button>
           <Button onClick={() => setSaveDialogOpen(false)} color="inherit">

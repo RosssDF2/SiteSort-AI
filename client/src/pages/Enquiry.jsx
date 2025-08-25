@@ -110,7 +110,7 @@ function Enquiry() {
               onClick={handleSubmit}
               disabled={!email || !message}
               sx={{
-                backgroundColor: "#10B981",
+                backgroundColor: "#9C27B0",
                 "&:hover": { backgroundColor: "#0e9e6f" }
               }}
             >

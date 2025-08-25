@@ -112,10 +112,10 @@ export default function RequestReset() {
                                 fullWidth
                                 sx={{
                                     mt: 3,
-                                    backgroundColor: "#10B981",
+                                    backgroundColor: "#9C27B0",
                                     borderRadius: 3,
                                     py: 1.2,
-                                    "&:hover": { backgroundColor: "#0f9c6b" },
+                                    "&:hover": { backgroundColor: "#7B1FA2" },
                                 }}
                             >
                                 Send Reset Link
@@ -127,7 +127,7 @@ export default function RequestReset() {
                 {/* Right green panel */}
                 <Box
                     flex={3}
-                    bgcolor="#10B981"
+                    bgcolor="#9C27B0"
                     color="white"
                     display="flex"
                     flexDirection="column"

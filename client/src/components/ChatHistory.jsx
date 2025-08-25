@@ -138,8 +138,8 @@ function ChatHistory({ history, onSelect, onNewChat, onDeleteChat, onUpdateHisto
         sx={{
           mb: 2,
           textTransform: "none",
-          bgcolor: "#10B981",
-          '&:hover': { bgcolor: "#0e9b74" }
+          bgcolor: "#9C27B0",
+          '&:hover': { bgcolor: "#7B1FA2" }
         }}
       >
         New Chat
@@ -256,14 +256,14 @@ function ChatHistory({ history, onSelect, onNewChat, onDeleteChat, onUpdateHisto
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEditIndex(null)} sx={{ color: "#10B981" }}>Cancel</Button>
+          <Button onClick={() => setEditIndex(null)} sx={{ color: "#9C27B0" }}>Cancel</Button>
           <Button
             onClick={confirmEdit}
             variant="contained"
             sx={{
-              bgcolor: "#10B981",
+              bgcolor: "#9C27B0",
               color: "#fff",
-              "&:hover": { bgcolor: "#0e9b74" }
+              "&:hover": { bgcolor: "#7B1FA2" }
             }}
           >
             Save
@@ -280,7 +280,7 @@ function ChatHistory({ history, onSelect, onNewChat, onDeleteChat, onUpdateHisto
           <Typography>Are you sure you want to delete this chat?</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmDeleteIndex(null)} sx={{ color: "#10B981" }}>Cancel</Button>
+          <Button onClick={() => setConfirmDeleteIndex(null)} sx={{ color: "#9C27B0" }}>Cancel</Button>
           <Button
             onClick={confirmDelete}
             color="error"

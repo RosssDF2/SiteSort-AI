@@ -82,7 +82,7 @@ function Reports() {
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-        <Typography variant="h4" sx={{ color: "#10B981", fontWeight: 700 }}>
+        <Typography variant="h4" sx={{ color: "#9C27B0", fontWeight: 700 }}>
           Saved Reports
         </Typography>
         <Stack direction="row" spacing={1}>
@@ -90,7 +90,7 @@ function Reports() {
             component={Link}
             to="/chatbot"
             variant="outlined"
-            sx={{ borderColor: "#10B981", color: "#10B981" }}
+            sx={{ borderColor: "#9C27B0", color: "#9C27B0" }}
           >
             Back to Chat
           </Button>
@@ -113,7 +113,7 @@ function Reports() {
           />
           <Chip
             label={`${filtered.length} ${filtered.length === 1 ? "report" : "reports"}`}
-            sx={{ bgcolor: "#ecfdf5", color: "#065f46", fontWeight: 600 }}
+            sx={{ bgcolor: "#F3E5F5", color: "#7B1FA2", fontWeight: 600 }}
           />
         </Stack>
       </Paper>

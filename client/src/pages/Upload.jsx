@@ -8,6 +8,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Close";
 import MainLayout from "../layouts/MainLayout";
 import SortaBot from "../components/SortaBot";
+import LoadingOverlay from "../components/LoadingOverlay";
 import axios from "axios";
 
 function FolderSelector({ onSelect }) {
@@ -61,8 +62,8 @@ function FolderSelector({ onSelect }) {
                 sx={{
                   p: 1,
                   cursor: "pointer",
-                  backgroundColor: selectedFolder?.id === folder.id ? "#DCFCE7" : "transparent",
-                  "&:hover": { backgroundColor: "#ECFDF5" },
+                  backgroundColor: selectedFolder?.id === folder.id ? "#F3E5F5" : "transparent",
+                  "&:hover": { backgroundColor: "#F5E1F7" },
                 }}
               >
                 {folder.name}
@@ -305,6 +306,7 @@ function Upload() {
   const handleUpload = async () => {
     if (!selectedFiles.length) return;
     setLoading(true);
+    setStep("analyzing"); // Add this step for the loading animation
     
     try {
       // First check auth token
@@ -423,24 +425,53 @@ function Upload() {
               mx: "auto",
               p: 4,
               border: "3px dashed",
-              borderColor: dragActive ? '#047857' : '#10B981',
+              borderColor: dragActive ? '#7B1FA2' : '#9C27B0',
               borderRadius: 4,
-              backgroundColor: dragActive ? '#F0FDF4' : '#ffffff',
+              backgroundColor: dragActive ? 'rgba(156, 39, 176, 0.04)' : '#ffffff',
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexDirection: "column",
-              transition: 'all 0.2s ease',
+              transition: 'all 0.3s ease-in-out',
+              cursor: 'pointer',
+              boxShadow: dragActive ? '0 0 20px rgba(156, 39, 176, 0.2)' : 'none',
+              transform: dragActive ? 'scale(1.02)' : 'scale(1)',
+              '&:hover': {
+                backgroundColor: 'rgba(156, 39, 176, 0.02)',
+                boxShadow: '0 4px 20px rgba(156, 39, 176, 0.15)',
+                transform: 'translateY(-2px)',
+              }
             }}
           >
-            <UploadFileIcon sx={{ fontSize: 50, color: "#10B981", mb: 1 }} />
+            <UploadFileIcon 
+              sx={{ 
+                fontSize: 50, 
+                color: "#9C27B0", 
+                mb: 1,
+                transition: 'all 0.3s ease-in-out',
+                animation: dragActive ? 'pulse 1.5s infinite' : 'none',
+                '@keyframes pulse': {
+                  '0%': { transform: 'scale(1)', opacity: 1 },
+                  '50%': { transform: 'scale(1.1)', opacity: 0.8 },
+                  '100%': { transform: 'scale(1)', opacity: 1 }
+                }
+              }} 
+            />
             <Button
               component="label"
               sx={{
                 fontSize: 16,
                 textTransform: "none",
-                color: "#10B981",
-                "&:hover": { opacity: 0.8 },
+                color: "#9C27B0",
+                transition: 'all 0.3s ease-in-out',
+                "&:hover": { 
+                  transform: 'scale(1.05)',
+                  color: '#7B1FA2',
+                  backgroundColor: 'rgba(156, 39, 176, 0.04)'
+                },
+                borderRadius: 2,
+                py: 1,
+                px: 2
               }}
             >
               Click to browse or drag and drop files here
@@ -481,7 +512,7 @@ function Upload() {
           <Box mt={3}>
             <Button
               variant="contained"
-              sx={{ m: 1, backgroundColor: '#10B981', '&:hover': { backgroundColor: '#0f9f76' } }}
+              sx={{ m: 1, backgroundColor: '#9C27B0', '&:hover': { backgroundColor: '#7B1FA2' } }}
               disabled={!selectedFiles.length}
               onClick={handleUpload}
             >
@@ -516,7 +547,7 @@ function Upload() {
               <Box 
                 sx={{ 
                   p: 2, 
-                  backgroundColor: file.status === 'error' ? '#FEF2F2' : '#F0FDF4',
+                  backgroundColor: file.status === 'error' ? '#FEF2F2' : 'rgba(156, 39, 176, 0.04)',
                   borderBottom: '1px solid #e5e7eb'
                 }}
                 display="flex"
@@ -526,7 +557,21 @@ function Upload() {
                 <Typography variant="h6">{file.file.name}</Typography>
                 <Chip 
                   label={file.status} 
-                  color={file.status === 'error' ? 'error' : file.status === 'completed' ? 'success' : 'default'}
+                  sx={{
+                    backgroundColor: file.status === 'error' ? '#FEF2F2' : 
+                                   file.status === 'completed' ? 'rgba(156, 39, 176, 0.1)' : 
+                                   'rgba(0, 0, 0, 0.08)',
+                    color: file.status === 'error' ? '#DC2626' : 
+                           file.status === 'completed' ? '#9C27B0' : 
+                           'rgba(0, 0, 0, 0.6)',
+                    borderColor: file.status === 'error' ? '#DC2626' : 
+                                file.status === 'completed' ? '#9C27B0' : 
+                                'rgba(0, 0, 0, 0.12)',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      transform: 'scale(1.05)',
+                    }
+                  }}
                 />
               </Box>
 
@@ -548,7 +593,17 @@ function Upload() {
                               newAnalysis[index].tags = file.tags.filter((_, i) => i !== idx);
                               setFileAnalysis(newAnalysis);
                             }}
-                            color="primary"
+                            sx={{
+                              backgroundColor: 'rgba(255, 20, 147, 0.1)',
+                              borderColor: '#FF1493',
+                              color: '#FF1493',
+                              '& .MuiChip-deleteIcon': {
+                                color: '#FF1493',
+                                '&:hover': {
+                                  color: '#FF1493',
+                                }
+                              }
+                            }}
                           />
                         ))}
                       </Box>
@@ -566,8 +621,13 @@ function Upload() {
                           onClick={() => handleConfirm(file.suggestedFolderId, index)}
                           disabled={file.status === 'completed'}
                           sx={{ 
-                            backgroundColor: '#059669', 
-                            '&:hover': { backgroundColor: '#047857' }
+                            backgroundColor: '#9C27B0', 
+                            '&:hover': { backgroundColor: '#7B1FA2' },
+                            transition: 'all 0.3s ease-in-out',
+                            '&:not(:disabled):hover': {
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 4px 12px rgba(156, 39, 176, 0.3)'
+                            }
                           }}
                         >
                           {file.status === 'completed' ? 'Uploaded' : 'Upload to Suggested Folder'}
@@ -577,11 +637,17 @@ function Upload() {
                           onClick={() => setCurrentFileIndex(index)}
                           disabled={file.status === 'completed'}
                           sx={{ 
-                            borderColor: '#059669',
-                            color: '#059669',
+                            borderColor: '#9C27B0',
+                            color: '#9C27B0',
+                            transition: 'all 0.3s ease-in-out',
                             '&:hover': { 
-                              borderColor: '#047857',
-                              backgroundColor: '#F0FDF4'
+                              borderColor: '#7B1FA2',
+                              backgroundColor: 'rgba(156, 39, 176, 0.04)',
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 4px 12px rgba(156, 39, 176, 0.15)'
+                            },
+                            '&:not(:disabled)': {
+                              borderWidth: '2px'
                             }
                           }}
                         >
@@ -599,7 +665,7 @@ function Upload() {
                               variant="contained"
                               onClick={() => handleConfirm(manualFolder, index)}
                               disabled={!manualFolder}
-                              sx={{ backgroundColor: '#10B981', '&:hover': { backgroundColor: '#0f9f76' } }}
+                              sx={{ backgroundColor: '#9C27B0', '&:hover': { backgroundColor: '#7B1FA2' } }}
                             >
                               Confirm Upload
                             </Button>
@@ -619,17 +685,22 @@ function Upload() {
         </Box>
       )}
 
-      {loading && (
-        <Box textAlign="center" mt={10}>
-          <CircularProgress color="success" />
-          <Typography mt={2}>Analyzing file with AI...</Typography>
-        </Box>
-      )}
+      {/* Show loading overlay when analyzing files */}
+      {step === "analyzing" && <LoadingOverlay />}
 
       <Box mt={10} ml={{ xs: 0, md: '240px' }} pr={3} px={4}>
         <Typography variant="h5" mb={2}>📜 Upload History</Typography>
         {uploadHistory.map((entry, i) => (
-          <Paper key={i} sx={{ p: 2, mb: 2, backgroundColor: "#F0FDF4" }}>
+          <Paper key={i} sx={{ 
+            p: 2, 
+            mb: 2, 
+            backgroundColor: "rgba(156, 39, 176, 0.04)",
+            transition: 'all 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 12px rgba(156, 39, 176, 0.15)'
+            }
+          }}>
             <Typography fontWeight="bold">{entry.filename}</Typography>
             <Typography variant="body2" color="text.secondary">
               {new Date(entry.createdAt).toLocaleString()}

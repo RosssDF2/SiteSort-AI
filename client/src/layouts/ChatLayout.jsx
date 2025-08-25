@@ -78,7 +78,7 @@ function ChatLayout({ children }) {
         <Box display="flex" alignItems="center" gap={1}>
           <img src="/logo.png" alt="SiteSort AI" style={{ height: 40 }} />
           <Typography variant="h6" fontWeight={700}>
-            Site<span style={{ color: "#10B981" }}>Sort</span> AI
+            Site<span style={{ color: "#9C27B0" }}>Sort</span> AI
           </Typography>
         </Box>
 
@@ -110,10 +110,10 @@ function ChatLayout({ children }) {
                         }}
                         size="small"
                         sx={{
-                          bgcolor: isActive ? "#10B981" : "#f3f4f6",
+                          bgcolor: isActive ? "#9C27B0" : "#f3f4f6",
                           color: isActive ? "white" : "inherit",
                           "&:hover": {
-                            bgcolor: isActive ? "#10B981" : "#e5e7eb",
+                            bgcolor: isActive ? "#7B1FA2" : "#e5e7eb",
                           },
                           borderRadius: 2,
                         }}
@@ -133,10 +133,10 @@ function ChatLayout({ children }) {
                     }}
                     size="small"
                     sx={{
-                      bgcolor: location.pathname === "/admin" ? "#10B981" : "#f3f4f6",
+                      bgcolor: location.pathname === "/admin" ? "#9C27B0" : "#f3f4f6",
                       color: location.pathname === "/admin" ? "white" : "inherit",
                       "&:hover": {
-                        bgcolor: location.pathname === "/admin" ? "#10B981" : "#e5e7eb",
+                        bgcolor: location.pathname === "/admin" ? "#7B1FA2" : "#e5e7eb",
                       },
                       borderRadius: 2,
                     }}
@@ -164,7 +164,7 @@ function ChatLayout({ children }) {
               <Box>
                 <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
                 <Typography variant="subtitle1">
-                  Hi, <span style={{ color: "#10B981" }}>{username}</span>
+                  Hi, <span style={{ color: "#9C27B0" }}>{username}</span>
                 </Typography>
               </Box>
             </Box>

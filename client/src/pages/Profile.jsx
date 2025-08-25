@@ -90,7 +90,7 @@ function Profile() {
           }}
         />
         <Typography variant="h4" mb={1} fontWeight="600">
-          Welcome, <span style={{ color: '#10B981' }}>{username}</span>
+          Welcome, <span style={{ color: '#9C27B0' }}>{username}</span>
         </Typography>
         <Typography color="text.secondary" variant="body1" sx={{ maxWidth: 500, mx: 'auto' }}>
           Manage your profile, preferences, and settings to get the most out of your file assistant
@@ -114,7 +114,7 @@ function Profile() {
             }}
           >
             <Box display="flex" alignItems="center" gap={2} mb={2}>
-              <LockIcon color="success" sx={{ fontSize: 24 }} />
+              <LockIcon sx={{ fontSize: 24, color: '#9C27B0' }} />
               <Typography variant="h6" fontWeight="600">Password Manager</Typography>
             </Box>
             <Typography mb={3} color="text.secondary" variant="body1">
@@ -124,9 +124,9 @@ function Profile() {
               <Button
                 variant="text"
                 sx={{ 
-                  color: '#10B981',
+                  color: '#9C27B0',
                   '&:hover': {
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                    backgroundColor: 'rgba(156, 39, 176, 0.1)'
                   }
                 }}
                 onClick={async () => {
@@ -152,7 +152,7 @@ function Profile() {
                 <Typography
                   ml={2}
                   fontSize={14}
-                  color={resetMessage.startsWith("📩") ? "success.main" : "error"}
+                  color={resetMessage.startsWith("📩") ? "#FF1493" : "error"}
                 >
                   {resetMessage}
                 </Typography>
@@ -175,7 +175,7 @@ function Profile() {
             }}
           >
             <Box display="flex" alignItems="center" gap={2} mb={2}>
-              <InfoIcon color="success" sx={{ fontSize: 24 }} />
+              <InfoIcon sx={{ fontSize: 24, color: '#9C27B0' }} />
               <Typography variant="h6" fontWeight="600">Personal Info</Typography>
             </Box>
             <Typography mb={3} color="text.secondary" variant="body1">
@@ -190,9 +190,9 @@ function Profile() {
                 textTransform: 'none',
                 px: 3,
                 py: 1,
-                backgroundColor: '#10B981',
+                backgroundColor: '#9C27B0',
                 '&:hover': {
-                  backgroundColor: '#0f9c6b'
+                  backgroundColor: '#7B1FA2'
                 }
               }}
             >
@@ -216,7 +216,7 @@ function Profile() {
             }}
           >
             <Box display="flex" alignItems="center" gap={2} mb={2}>
-              <SettingsIcon color="success" sx={{ fontSize: 24 }} />
+              <SettingsIcon sx={{ fontSize: 24, color: '#9C27B0' }} />
               <Typography variant="h6" fontWeight="600">Security Settings</Typography>
             </Box>
             <Typography mb={3} color="text.secondary" variant="body1">
@@ -239,9 +239,9 @@ function Profile() {
                     textTransform: 'none',
                     px: 3,
                     py: 1.5,
-                    backgroundColor: '#10B981',
+                    backgroundColor: '#9C27B0',
                     '&:hover': {
-                      backgroundColor: '#0f9c6b'
+                      backgroundColor: '#7B1FA2'
                     }
                   }}
                   onClick={async () => {
@@ -335,13 +335,23 @@ function Profile() {
                 <Chip
                   icon={<GoogleIcon />}
                   label={isGoogleLinked ? "Google linked" : "Google not bound"}
-                  color={isGoogleLinked ? "success" : "warning"}
+                  sx={isGoogleLinked ? {
+                    bgcolor: '#FF1493',
+                    color: 'white',
+                    '& .MuiChip-icon': { color: 'white' }
+                  } : {}}
+                  color={isGoogleLinked ? "default" : "warning"}
                   variant={isGoogleLinked ? "filled" : "outlined"}
                 />
                 <Chip
                   icon={<SecurityIcon />}
                   label={isGoogleLinked && user?.role === "manager" ? "2FA enabled" : "2FA not enabled"}
-                  color={isGoogleLinked && user?.role === "manager" ? "success" : "warning"}
+                  sx={(isGoogleLinked && user?.role === "manager") ? {
+                    bgcolor: '#FF1493',
+                    color: 'white',
+                    '& .MuiChip-icon': { color: 'white' }
+                  } : {}}
+                  color={isGoogleLinked && user?.role === "manager" ? "default" : "warning"}
                   variant={isGoogleLinked && user?.role === "manager" ? "filled" : "outlined"}
                 />
               </Box>

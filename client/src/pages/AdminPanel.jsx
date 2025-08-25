@@ -99,7 +99,7 @@ function AdminPanel() {
     };
     const roleColors = {
         admin: "#EF4444",    // red
-        manager: "#10B981",  // green
+        manager: "#9C27B0",  // purple
         employee: "#3B82F6", // blue
     };
 

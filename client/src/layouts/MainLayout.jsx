@@ -106,10 +106,10 @@ function MainLayout({ children }) {
                         }}
                         size="small"
                         sx={{
-                          bgcolor: isActive ? "#10B981" : "#f3f4f6",
+                          bgcolor: isActive ? "#9C27B0" : "#f3f4f6",
                           color: isActive ? "white" : "inherit",
                           "&:hover": {
-                            bgcolor: isActive ? "#10B981" : "#e5e7eb",
+                            bgcolor: isActive ? "#9C27B0" : "#e5e7eb",
                           },
                           borderRadius: 2,
                         }}
@@ -131,10 +131,10 @@ function MainLayout({ children }) {
                     }}
                     size="small"
                     sx={{
-                      bgcolor: location.pathname === "/admin" ? "#10B981" : "#f3f4f6",
+                      bgcolor: location.pathname === "/admin" ? "#9C27B0" : "#f3f4f6",
                       color: location.pathname === "/admin" ? "white" : "inherit",
                       "&:hover": {
-                        bgcolor: location.pathname === "/admin" ? "#10B981" : "#e5e7eb",
+                        bgcolor: location.pathname === "/admin" ? "#9C27B0" : "#e5e7eb",
                       },
                       borderRadius: 2,
                     }}
@@ -164,7 +164,7 @@ function MainLayout({ children }) {
               <Box>
                 <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
                 <Typography variant="subtitle1">
-                  Hi, <span style={{ color: "#10B981" }}>{username}</span>
+                  Hi, <span style={{ color: "#9C27B0" }}>{username}</span>
                 </Typography>
               </Box>
             </Box>

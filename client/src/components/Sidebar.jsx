@@ -71,7 +71,7 @@ function Sidebar() {
             style={{ width: 50, height: 50, objectFit: "contain" }}
           />
           <Typography variant="h6" fontWeight={700}>
-            Site<span style={{ color: "#10B981" }}>Sort</span> AI
+            Site<span style={{ color: "#9C27B0" }}>Sort</span> AI
           </Typography>
         </Box>
 
@@ -83,13 +83,13 @@ function Sidebar() {
                 button
                 onClick={() => navigate('/profile')}
                 sx={{
-                  backgroundColor: location.pathname === '/profile' ? '#10B981' : 'transparent',
+                  backgroundColor: location.pathname === '/profile' ? '#9C27B0' : 'transparent',
                   color: location.pathname === '/profile' ? 'white' : 'black',
                   borderRadius: 2,
                   mx: 2,
                   mb: 1,
                   '&:hover': {
-                    backgroundColor: location.pathname === '/profile' ? '#10B981' : '#f0f0f0',
+                    backgroundColor: location.pathname === '/profile' ? '#7B1FA2' : '#F3E5F5',
                   },
                 }}
               >
@@ -103,13 +103,13 @@ function Sidebar() {
                 button
                 onClick={() => navigate('/admin')}
                 sx={{
-                  backgroundColor: location.pathname === '/admin' ? '#10B981' : 'transparent',
+                  backgroundColor: location.pathname === '/admin' ? '#9C27B0' : 'transparent',
                   color: location.pathname === '/admin' ? 'white' : 'black',
                   borderRadius: 2,
                   mx: 2,
                   mb: 1,
                   '&:hover': {
-                    backgroundColor: location.pathname === '/admin' ? '#10B981' : '#f0f0f0',
+                    backgroundColor: location.pathname === '/admin' ? '#7B1FA2' : '#F3E5F5',
                   },
                 }}
               >
@@ -137,13 +137,13 @@ function Sidebar() {
                       }, 1800);
                     }}
                     sx={{
-                      backgroundColor: location.pathname === item.path ? '#10B981' : 'transparent',
+                      backgroundColor: location.pathname === item.path ? '#9C27B0' : 'transparent',
                       color: location.pathname === item.path ? 'white' : 'black',
                       borderRadius: 2,
                       mx: 2,
                       mb: 1,
                       '&:hover': {
-                        backgroundColor: location.pathname === item.path ? '#10B981' : '#f0f0f0',
+                        backgroundColor: location.pathname === item.path ? '#9C27B0' : '#f0f0f0',
                       },
                     }}
                   >
@@ -160,13 +160,13 @@ function Sidebar() {
                   button
                   onClick={() => navigate(item.path)}
                   sx={{
-                    backgroundColor: location.pathname === item.path ? '#10B981' : 'transparent',
+                    backgroundColor: location.pathname === item.path ? '#9C27B0' : 'transparent',
                     color: location.pathname === item.path ? 'white' : 'black',
                     borderRadius: 2,
                     mx: 2,
                     mb: 1,
                     '&:hover': {
-                      backgroundColor: location.pathname === item.path ? '#10B981' : '#f0f0f0',
+                      backgroundColor: location.pathname === item.path ? '#9C27B0' : '#f0f0f0',
                     },
                   }}
                 >
